@@ -20,24 +20,28 @@ Minos 由数据驱动的规则引擎、静态扫描器（源码/APK）、报告�
 ## Architectural Diagrams
 
 ```mermaid
-flowchart LR
-    CI[CI Job / CLI] --> CFG[配置/参数: 地区/法规/模式]
-    CI --> RSYNC[规则同步器 (rulesync)]
-    RSYNC --> RULES[本地规则集 (YAML/JSON)]
-    CFG --> PIPE[扫描管线调度]
+flowchart TD
+    CI["CI Job / CLI"] --> CFG["配置参数 (地区/法规/模式)"]
+    CI --> RSYNC["规则同步器 (rulesync)"]
+    RSYNC --> RULES["本地规则集 (YAML/JSON)"]
+
+    CFG --> PIPE["扫描管线调度"]
     RULES --> PIPE
-    SRC[源码输入] --> PIPE
-    APK[APK 输入] --> PIPE
-    PIPE --> SA1[Manifest/权限扫描]
-    PIPE --> SA2[SDK/敏感API/字符串扫描]
-    PIPE --> SA3[域名/资源/so 名称扫描]
-    SA1 --> AGG[结果汇总]
-    SA2 --> AGG
-    SA3 --> AGG
-    AGG --> REPORT[报告生成器 (HTML/JSON)]
-    AGG --> LOGS[日志输出 stdout+file]
-    REPORT --> OUT1[HTML 报告]
-    REPORT --> OUT2[JSON 报告]
+    SRC["源码输入"] --> PIPE
+    APK["APK 输入"] --> PIPE
+
+    PIPE --> MANI["Manifest/权限扫描"]
+    PIPE --> SDK["SDK/敏感API/字符串扫描"]
+    PIPE --> NET["域名/资源/so 名称扫描"]
+
+    MANI --> AGG["结果汇总"]
+    SDK  --> AGG
+    NET  --> AGG
+
+    AGG --> REPORT["报告生成器 (HTML/JSON)"]
+    AGG --> LOGS["日志输出 stdout+file"]
+    REPORT --> OUT1["HTML 报告"]
+    REPORT --> OUT2["JSON 报告"]
 ```
 
 ## Data Models, API Specs, Schemas, etc...
@@ -86,5 +90,5 @@ flowchart LR
 
 ### 部署/交付
 
-- 本地或 CI 通过 Docker/OCI 镜像运行，提供 CLI；支持无网模式使用本地规则缓存。
+- 本地可直接运行（Python 环境安装依赖后使用 CLI），也可在 CI 通过 Docker/OCI 镜像运行；支持无网模式使用本地规则缓存。
 - 预留动态检测插件接口（Frida/mitmproxy），后续迭代可接入。

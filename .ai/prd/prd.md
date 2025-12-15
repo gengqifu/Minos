@@ -36,6 +36,7 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 支持直接读取 Gradle 构建产物（如 assemble 后的 APK 和相关输出路径）进行扫描。
   - 可读取项目依赖/配置（gradle 文件、AndroidManifest）。
   - CI stdout 输出摘要（风险计数、报告路径）；报告以 HTML+JSON 工件输出。
+  - 支持本地直接运行（安装依赖后通过 CLI），同时提供 Docker/OCI 镜像便于 CI 集成。
 - 合规要求：
   - 覆盖 GDPR/CCPA/CPRA/LGPD/PIPL 等主流法规基本规则。
   - 支持地区→法规映射与手工追加法规的并集逻辑。

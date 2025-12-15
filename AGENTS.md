@@ -7,6 +7,7 @@
 ## 协作原则
 - 遵循 `.cursor/rules/workflows/workflow-agile-manual.mdc` 与 `.cursor/rules/core-rules/workflow-agile-manual.mdc` 的流程要求。
 - 文档与规则改动优先存放在 `.ai` 与 `.cursor` 目录，保持结构清晰。
+- 文档放置遵循 core 规则：PRD 置于 `.ai/prd/`，架构文档置于 `.ai/architecture/`，故事置于 `.ai/stories/`，其他记忆文档留在 `.ai`（根 readme 可按需更新）。
 - 若需新增规则或模板，确保以数据驱动方式编写，便于后续扩展。
 
 ## 开发与交付

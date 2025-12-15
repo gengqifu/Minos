@@ -82,8 +82,11 @@ def sync_rules(
         for child in target_dir.iterdir():
             if child.is_dir():
                 for sub in child.rglob("*"):
-                    sub.unlink() if sub.is_file() else None
-            child.unlink()
+                    if sub.is_file():
+                        sub.unlink()
+                child.rmdir()
+            else:
+                child.unlink()
         target_dir.rmdir()
     target_dir.mkdir(parents=True, exist_ok=True)
 

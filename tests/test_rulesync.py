@@ -1,0 +1,115 @@
+import hashlib
+import json
+import tarfile
+import tempfile
+from pathlib import Path
+
+import pytest
+
+from minos import rulesync
+
+
+def _create_rules_pkg(tmpdir: Path, version: str, content: str = "rule") -> Path:
+    """在临时目录下生成规则包 tar.gz，返回包路径和 sha256。"""
+    pkg_dir = tmpdir / f"rules-{version}"
+    pkg_dir.mkdir(parents=True, exist_ok=True)
+    rules_file = pkg_dir / "rules.txt"
+    rules_file.write_text(content, encoding="utf-8")
+    tar_path = tmpdir / f"rules-{version}.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as tar:
+        tar.add(pkg_dir, arcname="rules")
+    sha256 = hashlib.sha256(tar_path.read_bytes()).hexdigest()
+    return tar_path, sha256
+
+
+def _read_metadata(cache_dir: Path, version: str) -> dict:
+    meta_path = cache_dir / version / "metadata.json"
+    return json.loads(meta_path.read_text(encoding="utf-8"))
+
+
+def test_sync_rules_success_writes_metadata_and_activates(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    active_path = rulesync.sync_rules(
+        source=str(pkg_path),
+        version="v1.0.0",
+        cache_dir=cache_dir,
+        expected_sha256=sha256,
+    )
+
+    meta = _read_metadata(cache_dir, "v1.0.0")
+    assert active_path.exists()
+    assert meta["version"] == "v1.0.0"
+    assert meta["source"] == str(pkg_path)
+    assert meta["sha256"] == sha256
+    assert meta.get("active") is True
+
+
+def test_sync_rules_checksum_mismatch_raises_and_no_activate(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    with pytest.raises(rulesync.RulesyncChecksumError):
+        rulesync.sync_rules(
+            source=str(pkg_path),
+            version="v1.0.0",
+            cache_dir=cache_dir,
+            expected_sha256="badchecksum",
+        )
+
+    assert not (cache_dir / "v1.0.0").exists()
+
+
+def test_offline_uses_cached_version(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    # 先正常同步一次
+    rulesync.sync_rules(
+        source=str(pkg_path),
+        version="v1.0.0",
+        cache_dir=cache_dir,
+        expected_sha256=sha256,
+    )
+
+    # 离线模式，不应触发拉取，直接使用缓存
+    active_path = rulesync.sync_rules(
+        source=str(pkg_path),
+        version="v1.0.0",
+        cache_dir=cache_dir,
+        expected_sha256=sha256,
+        offline=True,
+    )
+    assert active_path.exists()
+
+
+def test_activate_version_switches_active_pointer(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg1, sha1 = _create_rules_pkg(tmp_path, "v1.0.0")
+    pkg2, sha2 = _create_rules_pkg(tmp_path, "v1.1.0")
+
+    rulesync.sync_rules(str(pkg1), "v1.0.0", cache_dir, expected_sha256=sha1)
+    rulesync.sync_rules(str(pkg2), "v1.1.0", cache_dir, expected_sha256=sha2)
+
+    path = rulesync.activate_version(cache_dir, "v1.0.0")
+    meta = _read_metadata(cache_dir, "v1.0.0")
+    assert path.exists()
+    assert meta.get("active") is True
+
+
+def test_list_versions_returns_all_cached(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg1, sha1 = _create_rules_pkg(tmp_path, "v1.0.0")
+    pkg2, sha2 = _create_rules_pkg(tmp_path, "v1.1.0")
+
+    rulesync.sync_rules(str(pkg1), "v1.0.0", cache_dir, expected_sha256=sha1)
+    rulesync.sync_rules(str(pkg2), "v1.1.0", cache_dir, expected_sha256=sha2)
+
+    versions = rulesync.list_versions(cache_dir)
+    assert set(versions) >= {"v1.0.0", "v1.1.0"}

@@ -1,6 +1,6 @@
 # Architecture for Minos 隐私合规扫描程序
 
-Status: Draft
+Status: Approved
 
 ## Technical Summary
 

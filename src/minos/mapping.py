@@ -3,6 +3,8 @@
 """
 
 from typing import Dict, List, Tuple
+import json
+from pathlib import Path
 
 # 默认地区与法规映射（可扩展/覆盖）
 DEFAULT_REGION_MAP: Dict[str, List[str]] = {
@@ -77,3 +79,23 @@ def merge_mapping(
 
     regs_list = sorted(regs_set)
     return regs_list, source_flags
+
+
+def load_config(config_path: Path) -> Dict[str, List[str]]:
+    """
+    从 JSON 配置文件读取地区/法规选择：
+    {
+      "regions": [...],
+      "manual_add": [...],
+      "manual_remove": [...]
+    }
+    """
+    if not config_path.exists():
+        raise FileNotFoundError(f"未找到配置文件: {config_path}")
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+    regions = data.get("regions") or []
+    manual_add = data.get("manual_add") or []
+    manual_remove = data.get("manual_remove") or []
+    if not isinstance(regions, list) or not isinstance(manual_add, list) or not isinstance(manual_remove, list):
+        raise ValueError("配置格式错误，需包含数组字段 regions/manual_add/manual_remove")
+    return {"regions": regions, "manual_add": manual_add, "manual_remove": manual_remove}

@@ -110,6 +110,10 @@ def build_selection(
             "regulations": regs,
             "source_flags": flags,
         },
+        "summary": {
+            "regions": regions,
+            "regulations": regs,
+        },
     }
 
 

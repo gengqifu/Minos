@@ -37,6 +37,9 @@ def test_build_selection_output():
     assert set(data["regulations"]) == {"CCPA/CPRA", "LGPD"}
     assert data["source_flags"]["CCPA/CPRA"] == "region"
     assert data["source_flags"]["LGPD"] == "manual"
+    assert set(data["report"]["regions"]) == {"EU", "US-CA"}
+    assert set(data["report"]["regulations"]) == {"CCPA/CPRA", "LGPD"}
+    assert data["report"]["source_flags"]["LGPD"] == "manual"
 
 
 def test_load_config_and_merge(tmp_path):

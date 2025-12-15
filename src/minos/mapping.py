@@ -92,7 +92,12 @@ def build_selection(
     {
       "regions": [...],
       "regulations": [...],
-      "source_flags": {regulation: "region"|"manual"}
+      "source_flags": {regulation: "region"|"manual"},
+      "report": {
+        "regions": [...],
+        "regulations": [...],
+        "source_flags": {...}
+      }
     }
     """
     regs, flags = merge_mapping(regions, manual_add=manual_add, manual_remove=manual_remove)
@@ -100,6 +105,11 @@ def build_selection(
         "regions": regions,
         "regulations": regs,
         "source_flags": flags,
+        "report": {
+            "regions": regions,
+            "regulations": regs,
+            "source_flags": flags,
+        },
     }
 
 

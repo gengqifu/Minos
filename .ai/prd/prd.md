@@ -153,53 +153,17 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
 
 ## Epic List
 
-### Epic-1: 静态扫描与规则引擎
+### Epic-1: 规则供应与版本管理
 
-### Epic-2: CI 集成与报告输出
+### Epic-2: 地区/法规映射与配置
 
-### Epic-3: 地区/法规映射与配置
+### Epic-3: 静态扫描与规则引擎
 
-### Epic-4: 规则供应与版本管理
+### Epic-4: CI 集成与报告输出
 
 ### Epic-N: 动态流量与运行时扩展（后续迭代）
 
 ## Epic 1: Story List
-
-- Story 1: Manifest 与权限扫描
-  Status: 
-  Requirements:
-  - 解析 AndroidManifest 权限/导出组件
-  - 规则匹配（必要性、敏感权限）并输出风险
-
-- Story 2: SDK 与敏感 API 扫描  
-  Status:  
-  Requirements:  
-  - 识别第三方 SDK/广告追踪库  
-  - 扫描敏感 API/字符串（ID、密钥、域名）  
-
-## Epic 2: Story List
-
-- Story 1: CLI/容器化与报告  
-  Status:  
-  Requirements:  
-  - 提供命令行与 Docker 镜像
-  - 输出 JSON/HTML 报告，含条款映射与证据
-
-- Story 2: CI 工作流示例
-  Status: 
-  Requirements:
-  - 集成 GitHub Actions/GitLab CI 样例
-  - 支持 PR 级快速扫描与发布前深度扫描
-
-## Epic 3: Story List
-
-- Story 1: 地区→法规映射配置
-  Status: 
-  Requirements:
-  - 维护地区与法规规则集的映射表  
-  - 支持用户手动追加或裁剪法规集  
-
-## Epic 4: Story List
 
 - Story 1: 规则同步与版本管理（rulesync）  
   Status:  
@@ -207,6 +171,42 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 从受控仓库拉取/校验规则包（版本与签名）  
   - 支持本地缓存与回滚；CLI 触发更新与检查版本  
   - 记录规则来源和版本，供扫描与报告引用  
+
+## Epic 2: Story List
+
+- Story 1: 地区→法规映射配置  
+  Status:  
+  Requirements:  
+  - 维护地区与法规规则集的映射表  
+  - 支持用户手动追加或裁剪法规集  
+
+## Epic 3: Story List
+
+- Story 1: Manifest 与权限扫描  
+  Status:  
+  Requirements:  
+  - 解析 AndroidManifest 权限/导出组件  
+  - 规则匹配（必要性、敏感权限）并输出风险  
+
+- Story 2: SDK 与敏感 API 扫描  
+  Status:  
+  Requirements:  
+  - 识别第三方 SDK/广告追踪库  
+  - 扫描敏感 API/字符串（ID、密钥、域名）  
+
+## Epic 4: Story List
+
+- Story 1: CLI/容器化与报告  
+  Status:  
+  Requirements:  
+  - 提供命令行与 Docker 镜像  
+  - 输出 JSON/HTML 报告，含条款映射与证据  
+
+- Story 2: CI 工作流示例  
+  Status:  
+  Requirements:  
+  - 集成 GitHub Actions/GitLab CI 样例  
+  - 支持 PR 级快速扫描与发布前深度扫描  
 
 ## Epic-N: Story List
 

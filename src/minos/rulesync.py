@@ -103,7 +103,11 @@ def list_versions(cache_dir: Path) -> list[str]:
     """列出缓存的规则版本。"""
     if not cache_dir.exists():
         return []
-    return [p.name for p in cache_dir.iterdir() if p.is_dir()]
+    versions: list[str] = []
+    for p in cache_dir.iterdir():
+        if p.is_dir():
+            versions.append(p.name)
+    return versions
 
 
 def activate_version(cache_dir: Path, version: str) -> Path:

@@ -117,3 +117,22 @@ def activate_version(cache_dir: Path, version: str) -> Path:
         raise RulesyncError(f"未找到指定版本: {version}")
     _set_active(cache_dir, version)
     return target_dir
+
+
+def rollback(cache_dir: Path, current_version: str, target_version: Optional[str] = None) -> Path:
+    """
+    回滚到指定版本；若未指定则回滚到上一个版本。
+    """
+    versions = sorted(list_versions(cache_dir))
+    if target_version:
+        if target_version not in versions:
+            raise RulesyncError(f"未找到目标版本: {target_version}")
+        return activate_version(cache_dir, target_version)
+
+    if current_version not in versions:
+        raise RulesyncError(f"当前版本不存在: {current_version}")
+    idx = versions.index(current_version)
+    if idx == 0:
+        raise RulesyncError("没有更早的版本可回滚")
+    prev_version = versions[idx - 1]
+    return activate_version(cache_dir, prev_version)

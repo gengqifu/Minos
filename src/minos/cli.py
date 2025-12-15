@@ -40,6 +40,11 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         default=0,
         help="失败重试次数（默认 0）",
     )
+    parser.add_argument(
+        "--rollback-to",
+        dest="rollback_to",
+        help="回滚到指定版本（可选）",
+    )
     parser.set_defaults(handler=_handle_rulesync)
 
 
@@ -49,6 +54,12 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
     attempt = 0
     while True:
         try:
+            # 回滚模式
+            if args.rollback_to:
+                path = rulesync.rollback(cache_dir, args.version, target_version=args.rollback_to)
+                sys.stdout.write(f"回滚成功: {path}\n")
+                return 0
+            # 同步模式
             path = rulesync.sync_rules(
                 source=args.source,
                 version=args.version,

@@ -190,3 +190,20 @@ def test_cli_rulesync_retries_then_success(monkeypatch, tmp_path: Path):
     exit_code = cli.main(args)
     assert exit_code == 0
     assert calls["n"] == 2
+
+
+def test_cli_rollback_to_previous(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg1, sha1 = _create_rules_pkg(tmp_path, "v1.0.0")
+    pkg2, sha2 = _create_rules_pkg(tmp_path, "v1.1.0")
+
+    cli.main(["rulesync", str(pkg1), "v1.0.0", "--sha256", sha1, "--cache-dir", str(cache_dir)])
+    cli.main(["rulesync", str(pkg2), "v1.1.0", "--sha256", sha2, "--cache-dir", str(cache_dir)])
+
+    exit_code = cli.main(
+        ["rulesync", str(pkg2), "v1.1.0", "--cache-dir", str(cache_dir), "--rollback-to", "v1.0.0"]
+    )
+    assert exit_code == 0
+    meta = _read_metadata(cache_dir, "v1.0.0")
+    assert meta.get("active") is True

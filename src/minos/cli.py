@@ -77,6 +77,9 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
             if args.cleanup_keep:
                 rulesync.cleanup(cache_dir, keep=args.cleanup_keep)
             sys.stdout.write(f"规则同步成功: {path}\n")
+            active = rulesync.get_active_path(cache_dir)
+            if active:
+                sys.stdout.write(f"当前激活规则路径: {active}\n")
             return 0
         except rulesync.RulesyncChecksumError as exc:
             attempt += 1

@@ -48,6 +48,17 @@ def _set_active(cache_dir: Path, version: str) -> None:
         meta_file.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def get_active_path(cache_dir: Path) -> Optional[Path]:
+    """返回当前激活的规则目录路径，无则返回 None。"""
+    if not cache_dir.exists():
+        return None
+    for meta_file in cache_dir.glob("*/metadata.json"):
+        meta = json.loads(meta_file.read_text(encoding="utf-8"))
+        if meta.get("active"):
+            return meta_file.parent
+    return None
+
+
 def sync_rules(
     source: str,
     version: str,

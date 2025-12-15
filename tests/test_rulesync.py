@@ -258,3 +258,14 @@ def test_cleanup_keeps_latest_versions(tmp_path: Path):
 
     versions = set(rulesync.list_versions(cache_dir))
     assert versions == {"v1.1.0", "v1.2.0"}
+
+
+def test_get_active_path_returns_current(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg, sha = _create_rules_pkg(tmp_path, "v1.0.0")
+    cli.main(["rulesync", str(pkg), "v1.0.0", "--sha256", sha, "--cache-dir", str(cache_dir)])
+
+    active = rulesync.get_active_path(cache_dir)
+    assert active is not None
+    assert active.name == "v1.0.0"

@@ -81,6 +81,28 @@ def merge_mapping(
     return regs_list, source_flags
 
 
+def build_selection(
+    regions: List[str],
+    manual_add: List[str] | None = None,
+    manual_remove: List[str] | None = None,
+    region_map: Dict[str, List[str]] | None = None,
+) -> Dict[str, object]:
+    """
+    生成供扫描器/报告使用的配置输出：
+    {
+      "regions": [...],
+      "regulations": [...],
+      "source_flags": {regulation: "region"|"manual"}
+    }
+    """
+    regs, flags = merge_mapping(regions, manual_add=manual_add, manual_remove=manual_remove)
+    return {
+        "regions": regions,
+        "regulations": regs,
+        "source_flags": flags,
+    }
+
+
 def load_config(config_path: Path) -> Dict[str, List[str]]:
     """
     从 JSON 配置文件读取地区/法规选择：

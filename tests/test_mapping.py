@@ -31,6 +31,14 @@ def test_invalid_region_raises():
         mapping.merge_mapping(["INVALID"], manual_add=None, manual_remove=None)
 
 
+def test_build_selection_output():
+    data = mapping.build_selection(["EU", "US-CA"], manual_add=["LGPD"], manual_remove=["GDPR"])
+    assert set(data["regions"]) == {"EU", "US-CA"}
+    assert set(data["regulations"]) == {"CCPA/CPRA", "LGPD"}
+    assert data["source_flags"]["CCPA/CPRA"] == "region"
+    assert data["source_flags"]["LGPD"] == "manual"
+
+
 def test_load_config_and_merge(tmp_path):
     cfg = {
         "regions": ["EU"],

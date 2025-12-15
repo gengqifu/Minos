@@ -26,12 +26,14 @@ def _calc_sha256(file_path: Path) -> str:
     return h.hexdigest()
 
 
-def _write_metadata(cache_dir: Path, version: str, source: str, sha256: str, active: bool) -> None:
+def _write_metadata(
+    cache_dir: Path, version: str, source: str, sha256: str, active: bool, gpg: Optional[str] = None
+) -> None:
     meta = {
         "version": version,
         "source": source,
         "sha256": sha256,
-        "gpg": None,
+        "gpg": gpg,
         "installed_at": datetime.now(timezone.utc).isoformat(),
         "active": active,
     }
@@ -94,7 +96,7 @@ def sync_rules(
     with tarfile.open(source_path, "r:gz") as tar:
         tar.extractall(path=target_dir)
 
-    _write_metadata(cache_dir, version, str(source_path), sha256, active=True)
+    _write_metadata(cache_dir, version, str(source_path), sha256, active=True, gpg=gpg_key)
     _set_active(cache_dir, version)
     return target_dir
 

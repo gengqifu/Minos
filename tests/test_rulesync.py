@@ -3,6 +3,7 @@ import json
 import tarfile
 import tempfile
 from pathlib import Path
+from datetime import datetime
 
 import pytest
 
@@ -114,6 +115,29 @@ def test_list_versions_returns_all_cached(tmp_path: Path):
 
     versions = rulesync.list_versions(cache_dir)
     assert set(versions) >= {"v1.0.0", "v1.1.0"}
+
+
+def test_metadata_fields_after_sync(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    rulesync.sync_rules(
+        source=str(pkg_path),
+        version="v1.0.0",
+        cache_dir=cache_dir,
+        expected_sha256=sha256,
+        gpg_key="dummy-key",
+    )
+
+    meta = _read_metadata(cache_dir, "v1.0.0")
+    assert meta["version"] == "v1.0.0"
+    assert meta["source"] == str(pkg_path)
+    assert meta["sha256"] == sha256
+    assert meta["gpg"] == "dummy-key"
+    # installed_at 可解析为 ISO 时间
+    datetime.fromisoformat(meta["installed_at"])
+    assert meta.get("active") is True
 
 
 def test_cli_rulesync_success(tmp_path: Path, monkeypatch):

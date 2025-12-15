@@ -91,6 +91,7 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
             attempt += 1
             if attempt > retries:
                 sys.stderr.write(f"[rulesync] 规则同步失败: {exc}\n")
+                # 退出码约定：1 为其他失败（源缺失/离线无缓存/回滚失败等）
                 return 1
             continue
 

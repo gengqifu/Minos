@@ -62,3 +62,12 @@
 - 切换版本：同步新版本激活，旧版本仍在缓存列表。  
 - 缺少输入/源不存在：退出码=1，提示错误。  
 - CLI 摘要输出：包含同步/回滚结果与当前激活路径，便于 CI 收集。
+
+### 验收用例（地区→法规映射）
+
+- 单地区：EU -> 输出 {GDPR}，source_flags=region。  
+- 多地区并集：[EU, US-CA] -> 输出 {GDPR, CCPA/CPRA}，source_flags 对应地区。  
+- 手动添加/移除：在映射结果上 add/remove，最终集合与 source_flags=manual 准确。  
+- 配置读取：JSON config 读写一致（regions/manual_add/manual_remove），非法配置报错。  
+- 无效输入：非法地区抛出明确错误；缺省输入需提示。  
+- 输出字段：包含 regions/regulations/source_flags/summary，供扫描器/报告使用。

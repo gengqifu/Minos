@@ -26,6 +26,32 @@
 - 成功退出码=0，校验失败=2，其他失败=1。
 - 输出包含同步/回滚结果与当前激活规则路径。
 
+### 地区→法规选择（映射/手动）
+
+- CLI/配置示例：
+  ```json
+  {
+    "regions": ["EU", "US-CA"],
+    "manual_add": ["LGPD"],
+    "manual_remove": []
+  }
+  ```
+- 产出供扫描/报告使用的字段（示意）：
+  ```json
+  {
+    "regions": ["EU", "US-CA"],
+    "regulations": ["CCPA/CPRA", "LGPD"],
+    "source_flags": {
+      "CCPA/CPRA": "region",
+      "LGPD": "manual"
+    },
+    "summary": {
+      "regions": ["EU", "US-CA"],
+      "regulations": ["CCPA/CPRA", "LGPD"]
+    }
+  }
+  ```
+
 ### 验收用例（rulesync）
 
 - 拉取成功：校验通过，metadata 写入版本/来源/sha256/gpg/时间戳，active=true，退出码=0。  

@@ -45,6 +45,12 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="rollback_to",
         help="回滚到指定版本（可选）",
     )
+    parser.add_argument(
+        "--cleanup-keep",
+        dest="cleanup_keep",
+        type=int,
+        help="同步后保留的版本数量（清理旧版本，默认不清理）",
+    )
     parser.set_defaults(handler=_handle_rulesync)
 
 
@@ -68,6 +74,8 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
                 gpg_key=args.gpg_key,
                 offline=args.offline,
             )
+            if args.cleanup_keep:
+                rulesync.cleanup(cache_dir, keep=args.cleanup_keep)
             sys.stdout.write(f"规则同步成功: {path}\n")
             return 0
         except rulesync.RulesyncChecksumError as exc:

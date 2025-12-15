@@ -207,3 +207,30 @@ def test_cli_rollback_to_previous(tmp_path: Path):
     assert exit_code == 0
     meta = _read_metadata(cache_dir, "v1.0.0")
     assert meta.get("active") is True
+
+
+def test_cleanup_keeps_latest_versions(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg1, sha1 = _create_rules_pkg(tmp_path, "v1.0.0")
+    pkg2, sha2 = _create_rules_pkg(tmp_path, "v1.1.0")
+    pkg3, sha3 = _create_rules_pkg(tmp_path, "v1.2.0")
+
+    cli.main(["rulesync", str(pkg1), "v1.0.0", "--sha256", sha1, "--cache-dir", str(cache_dir)])
+    cli.main(["rulesync", str(pkg2), "v1.1.0", "--sha256", sha2, "--cache-dir", str(cache_dir)])
+    cli.main(
+        [
+            "rulesync",
+            str(pkg3),
+            "v1.2.0",
+            "--sha256",
+            sha3,
+            "--cache-dir",
+            str(cache_dir),
+            "--cleanup-keep",
+            "2",
+        ]
+    )
+
+    versions = set(rulesync.list_versions(cache_dir))
+    assert versions == {"v1.1.0", "v1.2.0"}

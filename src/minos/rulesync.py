@@ -136,3 +136,32 @@ def rollback(cache_dir: Path, current_version: str, target_version: Optional[str
         raise RulesyncError("没有更早的版本可回滚")
     prev_version = versions[idx - 1]
     return activate_version(cache_dir, prev_version)
+
+
+def cleanup(cache_dir: Path, keep: int = 3) -> None:
+    """
+    清理旧版本/缓存，只保留最新 keep 个版本（按名称排序）。
+    """
+    if keep <= 0:
+        return
+    versions = sorted(list_versions(cache_dir))
+    if len(versions) <= keep:
+        return
+    to_delete = versions[:-keep]
+    for version in to_delete:
+        target_dir = cache_dir / version
+        if target_dir.exists() and target_dir.is_dir():
+            for sub in target_dir.rglob("*"):
+                if sub.is_file():
+                    sub.unlink()
+            # 删除空目录
+            for subdir in sorted(target_dir.rglob("*"), reverse=True):
+                if subdir.is_dir():
+                    try:
+                        subdir.rmdir()
+                    except OSError:
+                        pass
+            try:
+                target_dir.rmdir()
+            except OSError:
+                pass

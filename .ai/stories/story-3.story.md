@@ -21,8 +21,8 @@ Story Points: 2
 
 ## Tasks
 
-1. - [ ] 设计测试用例（TDD 先行）  
-   - [ ] 1.1 覆盖：必要性/敏感权限命中、导出组件命中、未命中、规则缺失、非法 Manifest 处理、映射来源标记透传  
+1. - [x] 设计测试用例（TDD 先行）  
+   - [x] 1.1 覆盖：必要性/敏感权限命中、导出组件命中、未命中、规则缺失、非法 Manifest 处理、映射来源标记透传  
    - [ ] 1.2 断言：命中列表（rule_id、法规、来源标记）、位置（文件/行或组件名）、严重级别、退出码与日志  
 2. - [ ] 实现测试用例（自动化）  
    - [ ] 2.1 编写解析/匹配/报告输出的测试用例，覆盖上述场景与断言  
@@ -89,6 +89,16 @@ flowchart TD
 - 若可用 mapping.txt，可提升定位（但此故事聚焦 Manifest）。  
 - 对解析失败/缺失需给出清晰错误并不中断其他流程（除非无可用 Manifest）。  
 - TDD：先写解析/匹配/输出的测试，再实现。
+
+## Test Plan
+
+- 必要性/敏感权限命中：Manifest 含敏感权限（如 ACCESS_FINE_LOCATION），命中对应规则，来源标记透传。  
+- 导出组件命中：导出 activity/service/provider 无保护时命中规则。  
+- 未命中：权限与导出配置均合规，结果为空。  
+- 规则缺失：规则集为空或未加载时提示/退出码，日志清晰。  
+- 非法 Manifest：无法解析或缺失时返回错误/退出码，不中断其他流程（可选跳过）。  
+- 来源标记透传：输出 findings 包含 source=region/manual，与映射结果一致。  
+- 输出字段：findings 包含 rule_id/regulation/source/location/evidence/recommendation/severity；stats 按严重级别/法规汇总；退出码约定。
 
 ## Chat Command Log
 

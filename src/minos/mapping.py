@@ -28,7 +28,9 @@ def load_regions(region_map: Dict[str, List[str]] | None = None) -> List[str]:
 
 
 def load_regulations(regulations: List[str] | None = None) -> List[str]:
-    """加载可选法规列表，支持覆盖。"""
+    """
+    加载可选法规列表，支持覆盖/扩展。
+    """
     regulations = regulations or DEFAULT_REGULATIONS
     return list(regulations)
 

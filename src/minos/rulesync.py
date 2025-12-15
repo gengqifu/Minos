@@ -79,15 +79,19 @@ def sync_rules(
     if offline:
         if target_dir.exists():
             _set_active(cache_dir, version)
+            print(f"[rulesync] offline mode, using cached version {version}")
             return target_dir
+        print("[rulesync] offline mode but version not found")
         raise RulesyncError("离线模式下未找到缓存的规则版本")
 
     source_path = Path(source)
     if not source_path.exists():
+        print(f"[rulesync] source not found: {source}")
         raise RulesyncError(f"规则源不存在: {source}")
 
     sha256 = _calc_sha256(source_path)
     if expected_sha256 and sha256 != expected_sha256:
+        print("[rulesync] checksum mismatch")
         raise RulesyncChecksumError("规则包校验失败")
 
     if target_dir.exists():
@@ -107,6 +111,7 @@ def sync_rules(
     with tarfile.open(source_path, "r:gz") as tar:
         tar.extractall(path=target_dir)
 
+    print(f"[rulesync] synced {version} from {source_path} to {target_dir}")
     _write_metadata(cache_dir, version, str(source_path), sha256, active=True, gpg=gpg_key)
     _set_active(cache_dir, version)
     return target_dir

@@ -63,7 +63,7 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
             # 回滚模式
             if args.rollback_to:
                 path = rulesync.rollback(cache_dir, args.version, target_version=args.rollback_to)
-                sys.stdout.write(f"回滚成功: {path}\n")
+                sys.stdout.write(f"[rulesync] 回滚成功: {path}\n")
                 return 0
             # 同步模式
             path = rulesync.sync_rules(
@@ -76,21 +76,21 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
             )
             if args.cleanup_keep:
                 rulesync.cleanup(cache_dir, keep=args.cleanup_keep)
-            sys.stdout.write(f"规则同步成功: {path}\n")
+            sys.stdout.write(f"[rulesync] 规则同步成功: {path}\n")
             active = rulesync.get_active_path(cache_dir)
             if active:
-                sys.stdout.write(f"当前激活规则路径: {active}\n")
+                sys.stdout.write(f"[rulesync] 当前激活规则路径: {active}\n")
             return 0
         except rulesync.RulesyncChecksumError as exc:
             attempt += 1
             if attempt > retries:
-                sys.stderr.write(f"规则校验失败: {exc}\n")
+                sys.stderr.write(f"[rulesync] 规则校验失败: {exc}\n")
                 return 2
             continue
         except rulesync.RulesyncError as exc:
             attempt += 1
             if attempt > retries:
-                sys.stderr.write(f"规则同步失败: {exc}\n")
+                sys.stderr.write(f"[rulesync] 规则同步失败: {exc}\n")
                 return 1
             continue
 

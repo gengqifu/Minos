@@ -4,10 +4,14 @@
 
 from typing import Dict, List, Tuple
 
-# 默认地区与法规映射
+# 默认地区与法规映射（可扩展/覆盖）
 DEFAULT_REGION_MAP: Dict[str, List[str]] = {
     "EU": ["GDPR"],
     "US-CA": ["CCPA/CPRA"],
+    "US": [],
+    "BR": ["LGPD"],
+    "CN": ["PIPL"],
+    "JP": ["APPI"],
 }
 
 # 默认可选法规列表（可扩展）
@@ -17,14 +21,16 @@ DEFAULT_REGULATIONS = ["GDPR", "CCPA/CPRA", "LGPD", "PIPL", "APPI"]
 DEFAULT_REGIONS = ["EU", "US-CA", "US", "BR", "CN", "JP"]
 
 
-def load_regions() -> List[str]:
-    """加载可选地区列表。"""
-    return list(DEFAULT_REGIONS)
+def load_regions(region_map: Dict[str, List[str]] | None = None) -> List[str]:
+    """加载可选地区列表，支持覆盖映射表。"""
+    region_map = region_map or DEFAULT_REGION_MAP
+    return list(region_map.keys())
 
 
-def load_regulations() -> List[str]:
-    """加载可选法规列表。"""
-    return list(DEFAULT_REGULATIONS)
+def load_regulations(regulations: List[str] | None = None) -> List[str]:
+    """加载可选法规列表，支持覆盖。"""
+    regulations = regulations or DEFAULT_REGULATIONS
+    return list(regulations)
 
 
 def merge_mapping(

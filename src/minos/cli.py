@@ -34,28 +34,43 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="gpg_key",
         help="GPG 公钥（预留，暂未启用）",
     )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=0,
+        help="失败重试次数（默认 0）",
+    )
     parser.set_defaults(handler=_handle_rulesync)
 
 
 def _handle_rulesync(args: argparse.Namespace) -> int:
     cache_dir = Path(args.cache_dir).expanduser()
-    try:
-        path = rulesync.sync_rules(
-            source=args.source,
-            version=args.version,
-            cache_dir=cache_dir,
-            expected_sha256=args.sha256,
-            gpg_key=args.gpg_key,
-            offline=args.offline,
-        )
-        sys.stdout.write(f"规则同步成功: {path}\n")
-        return 0
-    except rulesync.RulesyncChecksumError as exc:
-        sys.stderr.write(f"规则校验失败: {exc}\n")
-        return 2
-    except rulesync.RulesyncError as exc:
-        sys.stderr.write(f"规则同步失败: {exc}\n")
-        return 1
+    retries = max(args.retries, 0)
+    attempt = 0
+    while True:
+        try:
+            path = rulesync.sync_rules(
+                source=args.source,
+                version=args.version,
+                cache_dir=cache_dir,
+                expected_sha256=args.sha256,
+                gpg_key=args.gpg_key,
+                offline=args.offline,
+            )
+            sys.stdout.write(f"规则同步成功: {path}\n")
+            return 0
+        except rulesync.RulesyncChecksumError as exc:
+            attempt += 1
+            if attempt > retries:
+                sys.stderr.write(f"规则校验失败: {exc}\n")
+                return 2
+            continue
+        except rulesync.RulesyncError as exc:
+            attempt += 1
+            if attempt > retries:
+                sys.stderr.write(f"规则同步失败: {exc}\n")
+                return 1
+            continue
 
 
 def main(argv: list[str] | None = None) -> int:

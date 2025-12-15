@@ -136,3 +136,57 @@ def test_cli_rulesync_success(tmp_path: Path, monkeypatch):
     assert exit_code == 0
     meta = _read_metadata(cache_dir, "v1.0.0")
     assert meta["sha256"] == sha256
+
+
+def test_cli_rulesync_checksum_fail_exit_code(tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    args = [
+        "rulesync",
+        str(pkg_path),
+        "v1.0.0",
+        "--sha256",
+        "bad",
+        "--cache-dir",
+        str(cache_dir),
+    ]
+
+    exit_code = cli.main(args)
+    assert exit_code == 2
+    assert not (cache_dir / "v1.0.0").exists()
+
+
+def test_cli_rulesync_retries_then_success(monkeypatch, tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    calls = {"n": 0}
+
+    real_sync = rulesync.sync_rules
+
+    def flaky_sync(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise rulesync.RulesyncError("transient")
+        return real_sync(*args, **kwargs)
+
+    monkeypatch.setattr(rulesync, "sync_rules", flaky_sync)
+
+    args = [
+        "rulesync",
+        str(pkg_path),
+        "v1.0.0",
+        "--sha256",
+        sha256,
+        "--cache-dir",
+        str(cache_dir),
+        "--retries",
+        "1",
+    ]
+
+    exit_code = cli.main(args)
+    assert exit_code == 0
+    assert calls["n"] == 2

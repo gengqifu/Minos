@@ -52,9 +52,9 @@ def merge_mapping(
     manual_remove = manual_remove or []
 
     # 校验地区合法性
-    for reg in regions:
-        if reg not in DEFAULT_REGION_MAP:
-            raise ValueError(f"未知地区: {reg}")
+    invalid_regions = [reg for reg in regions if reg not in DEFAULT_REGION_MAP]
+    if invalid_regions:
+        raise ValueError(f"未知地区: {', '.join(invalid_regions)}")
 
     regs_set: set[str] = set()
     source_flags: Dict[str, str] = {}

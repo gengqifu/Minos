@@ -27,7 +27,7 @@ def test_manual_add_and_remove():
 
 
 def test_invalid_region_raises():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         mapping.merge_mapping(["INVALID"], manual_add=None, manual_remove=None)
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from minos import rulesync
+from minos import cli
 
 
 def _create_rules_pkg(tmpdir: Path, version: str, content: str = "rule") -> Path:
@@ -113,3 +114,25 @@ def test_list_versions_returns_all_cached(tmp_path: Path):
 
     versions = rulesync.list_versions(cache_dir)
     assert set(versions) >= {"v1.0.0", "v1.1.0"}
+
+
+def test_cli_rulesync_success(tmp_path: Path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    args = [
+        "rulesync",
+        str(pkg_path),
+        "v1.0.0",
+        "--sha256",
+        sha256,
+        "--cache-dir",
+        str(cache_dir),
+    ]
+
+    # 捕获退出码
+    exit_code = cli.main(args)
+    assert exit_code == 0
+    meta = _read_metadata(cache_dir, "v1.0.0")
+    assert meta["sha256"] == sha256

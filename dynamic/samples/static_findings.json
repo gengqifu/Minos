@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "type": "static",
+    "mode": "source"
+  },
+  "findings": [
+    {
+      "type": "static",
+      "source": "static",
+      "rule_id": "STATIC_ID_IN_CODE",
+      "regulation": "GDPR",
+      "severity": "medium",
+      "location": "src/Main.java",
+      "evidence": "IMEI access in code"
+    }
+  ],
+  "stats": {}
+}

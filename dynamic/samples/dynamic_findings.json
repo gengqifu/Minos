@@ -1,0 +1,34 @@
+{
+  "meta": {
+    "type": "dynamic",
+    "source": "frida",
+    "session": "run-001"
+  },
+  "findings": [
+    {
+      "type": "dynamic",
+      "source": "frida",
+      "rule_id": "RUNTIME_ID_ACCESS",
+      "regulation": "GDPR",
+      "severity": "medium",
+      "location": "com.example.MainActivity#getDeviceId()",
+      "evidence": "IMEI accessed at runtime",
+      "timestamp": "2024-01-01T00:00:00Z",
+      "session": "run-001"
+    },
+    {
+      "type": "dynamic",
+      "source": "mitmproxy",
+      "rule_id": "TRAFFIC_PII",
+      "regulation": "GDPR",
+      "severity": "high",
+      "location": "https://api.example.com/profile",
+      "evidence": "email=foo@example.com",
+      "timestamp": "2024-01-01T00:01:00Z",
+      "session": "run-001",
+      "pii_tags": ["email"],
+      "domains": ["api.example.com"]
+    }
+  ],
+  "stats": {}
+}

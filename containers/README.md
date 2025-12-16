@@ -12,7 +12,15 @@
 ```
 
 - 入口脚本：`containers/entrypoint.sh`，默认调用 `python -m minos.cli ...`。  
-- 无网/受限网络：可提前在宿主机执行 `minos rulesync ...` 将规则缓存到 `~/.minos/rules`，容器挂载后可离线使用。  
+- 构建镜像（示例）：`docker build -t minos:latest .`（可通过 ARG 覆盖 `PIP_INDEX_URL`/代理）。  
+- 运行示例（apk 模式）：  
+  ```bash
+  docker run --rm \
+    -v "$PWD":/work -w /work \
+    -v "$HOME/.minos/rules":/root/.minos/rules \
+    minos:latest \
+    minos scan --mode apk --apk-path app-release.apk --output-dir output/reports
+  ```
 - 输出：报告默认写入 `output/reports`（可通过 `--output-dir` 指定）。  
 
 规则缓存挂载约定：

@@ -35,7 +35,7 @@ Story Points: 3
    - [x] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  
    - [x] 4.3 （可选）CI 示例脚本：构建镜像 + 运行 smoke，生成工件  
 5. - [ ] 文档与发布  
-   - [ ] 5.1 更新 README/containers/README：构建命令、运行示例、规则缓存挂载、受限网络提示、标签/发布约定  
+   - [x] 5.1 更新 README/containers/README：构建命令、运行示例、规则缓存挂载、受限网络提示、标签/发布约定  
    - [ ] 5.2 标注镜像标签策略（如与 git tag 同步），占位推送命令（docker push/oci），列出依赖/体积注意事项  
 
 ## Constraints

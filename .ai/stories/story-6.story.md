@@ -33,7 +33,7 @@ Story Points: 3
 4. - [ ] 容器验收与 smoke 测试  
    - [x] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  
    - [x] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  
-   - [ ] 4.3 （可选）CI 示例脚本：构建镜像 + 运行 smoke，生成工件  
+   - [x] 4.3 （可选）CI 示例脚本：构建镜像 + 运行 smoke，生成工件  
 5. - [ ] 文档与发布  
    - [ ] 5.1 更新 README/containers/README：构建命令、运行示例、规则缓存挂载、受限网络提示、标签/发布约定  
    - [ ] 5.2 标注镜像标签策略（如与 git tag 同步），占位推送命令（docker push/oci），列出依赖/体积注意事项  
@@ -68,8 +68,9 @@ flowchart TD
 - 基础镜像推荐 slim 以减小体积；若需要 JDK 可选择带 JRE 的变体或安装 openjdk-17-jre-headless。  
 - 统一工作目录 /work，ENTRYPOINT 调用 `python -m minos.cli`，允许覆盖 CMD。  
 - Smoke 测试可使用现有示例源码/假 APK，关注退出码与报告路径。  
-- TDD：先写容器 smoke 测试/脚本，再补 Dockerfile 与文档。
-- 已添加 `scripts/container_smoke.sh`：构建镜像并运行一次源码模式扫描，生成 JSON 报告，验证退出码。
+- TDD：先写容器 smoke 测试/脚本，再补 Dockerfile 与文档。  
+- 已添加 `scripts/container_smoke.sh`：构建镜像并运行一次源码模式扫描，生成 JSON 报告，验证退出码。  
+- 已添加 `scripts/container_ci_example.sh`：CI 示例构建镜像并运行源码模式，输出到 output/reports 作为工件。  
 
 ## 验收设计（1.1）
 

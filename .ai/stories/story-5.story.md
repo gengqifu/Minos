@@ -21,9 +21,9 @@ Story Points: 2
 
 ## Tasks
 
-1. - [ ] 设计测试用例（TDD 先行）  
-   - [ ] 1.1 覆盖：CLI 参数解析、模式选择（source/apk/both）、输出格式 (html/json/both)、stdout 摘要内容、报告文件生成与字段校验、容器内运行示例  
-   - [ ] 1.2 断言：退出码、报告文件存在且符合 schema、日志摘要包含风险计数与路径、无阻断策略下不强制失败  
+1. - [x] 设计测试用例（TDD 先行）  
+   - [x] 1.1 覆盖：CLI 参数解析、模式选择（source/apk/both）、输出格式 (html/json/both)、stdout 摘要内容、报告文件生成与字段校验、容器内运行示例  
+   - [x] 1.2 断言：退出码、报告文件存在且符合 schema、日志摘要包含风险计数与路径、无阻断策略下不强制失败  
 2. - [ ] 实现测试用例（自动化）  
    - [ ] 2.1 编写 CLI/报告/容器入口的测试，覆盖参数、输出、摘要、错误场景  
    - [ ] 2.2 支持本地与 CI 运行，验证报告 schema、退出码与日志  
@@ -77,6 +77,24 @@ flowchart TD
 - 确保报告路径与 stdout 摘要中的路径一致，便于 CI 工件收集。  
 - 处理多输入时的并集合并与排序规则；清晰提示缺少输入的错误。  
 - TDD：先写 CLI/报告/容器入口的测试与断言，再实现。
+
+## Test Plan（设计）
+
+- 参数解析与模式选择：`--mode source`（仅源码）、`--mode apk`、`--mode both`；多 APK/多源码输入。  
+- 输出格式：`--format html` / `--format json` / 默认 both；验证对应报告文件存在。  
+- 报告字段校验：JSON/HTML 含 meta/findings/stats；统计字段与命中数一致；路径与 stdout 摘要一致。  
+- stdout 摘要：包含风险计数（按严重度/法规汇总简表或数字）、报告路径、目标数量。  
+- 缺少输入与错误：未提供 `--manifest/--apk-path/--input` 时返回非零退出码，打印清晰错误；不产生报告。  
+- 容器运行示例：模拟 `docker run -v code:/work -v out:/out minos scan ...`，验证报告生成路径与本地一致，行为一致（不依赖网络）。  
+- 无阻断策略：即便有 findings 退出码也为 0；仅参数/运行错误导致非零。  
+
+## Assertions（for tests）
+
+- 退出码：成功=0；缺少必要输入/参数错误=非零；findings 不能导致失败（无阻断策略）。  
+- 报告文件：根据 `--format`/默认生成对应 JSON/HTML 文件，路径与 stdout 摘要一致；JSON 含 meta/findings/stats，字段类型与 schema 一致。  
+- stdout 摘要：包含风险计数（severity/regulation 维度或总数）、输出报告路径、输入数量/模式；容器与本地输出一致。  
+- 日志：错误/跳过原因明确（例如缺少输入/无法读取文件）；log-level 生效。  
+- 容器示例：命令形如 `docker run --rm -v $PWD:/work -w /work minos scan --mode apk --apk-path app.apk --output-dir out`，报告文件在挂载目录中生成，格式与本地相同。  
 
 ## Chat Command Log
 

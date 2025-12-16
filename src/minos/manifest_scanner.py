@@ -167,4 +167,14 @@ def scan_manifest(
         f"by_regulation={stats['count_by_regulation']}, by_severity={stats['count_by_severity']}"
     )
 
+    # 详细日志
+    print(f"[manifest] rules={len(rules)} matched={len(findings)}")
+    if not findings:
+        print("[manifest] no findings")
+    for f in findings:
+        print(
+            f"[manifest] hit rule_id={f.get('rule_id')} regulation={f.get('regulation')} "
+            f"source={f.get('source')} location={f.get('location')} severity={f.get('severity')}"
+        )
+
     return findings, stats

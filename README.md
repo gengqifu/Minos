@@ -108,3 +108,24 @@
     minos scan --mode apk --apk-path app-release.apk --output-dir output/reports
   ```
 - 受限/无网：提前在宿主机执行 rulesync 缓存规则，再挂载 `~/.minos/rules` 供容器使用。  
+
+### 本地运行 CLI 扫描（示例）
+
+- 安装依赖后（如使用 `.venv`）：  
+  ```bash
+  PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+    --mode source \
+    --input app/src \
+    --output-dir output/reports \
+    --format both \
+    --regions EU --regulations GDPR
+  ```
+- APK 模式：  
+  ```bash
+  PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+    --mode apk \
+    --apk-path app-release.apk \
+    --output-dir output/reports \
+    --format json
+  ```
+- 行为与容器运行一致：报告路径/格式、stdout 摘要字段相同；缺少输入时返回非零并提示。

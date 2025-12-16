@@ -32,7 +32,7 @@ Story Points: 1
    - [x] 3.2 参数示例：地区/法规、输入路径、输出目录、log-level；缓存规则目录（可选）  
    - [x] 3.3 上传工件：HTML/JSON 报告、日志文件  
 4. - [ ] GitLab CI 示例  
-   - [ ] 4.1 stage/job 配置，镜像或本地运行方式  
+   - [x] 4.1 stage/job 配置，镜像或本地运行方式  
    - [ ] 4.2 参数示例与缓存/工件收集配置  
 5. - [ ] 输出与文档  
    - [ ] 5.1 在仓库提供 `ci/` 下的示例 YAML/脚本，附运行说明  
@@ -113,5 +113,7 @@ flowchart TD
 - Assistant: 在 GitHub Actions 示例中参数化地区/法规/输入/输出/日志级别与缓存目录并勾选 3.2
 - User: 标记任务3完成  
 - Assistant: 标记 Story-3 任务 3 完成
+- User: 执行任务4.1  
+- Assistant: 新增 GitLab CI stage/job（本地 Python + 容器）示例并勾选 4.1
 - User: 执行任务3.3  
 - Assistant: 确认 GitHub Actions 工件上传（HTML/JSON 报告与日志）配置并勾选 3.3

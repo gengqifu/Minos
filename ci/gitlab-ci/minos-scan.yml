@@ -1,0 +1,81 @@
+stages:
+  - scan
+
+variables:
+  MINOS_OUTPUT_DIR: output/reports
+  MINOS_LOG_DIR: output/logs
+  MINOS_RULE_CACHE: /root/.minos/rules
+  MINOS_INPUT_SRC: tests
+  MINOS_APK_PATH: ci/fixtures/dummy.apk
+  MINOS_REGIONS: eu
+  MINOS_REGULATIONS: gdpr
+  MINOS_FORMAT_LOCAL: both
+  MINOS_FORMAT_CONTAINER: json
+  MINOS_LOG_LEVEL: info
+
+cache:
+  key: minos-rules
+  paths:
+    - ${MINOS_RULE_CACHE}
+
+scan_local:
+  stage: scan
+  image: python:3.10-slim
+  script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+    - mkdir -p "${MINOS_OUTPUT_DIR}" "${MINOS_LOG_DIR}"
+    - python -m minos.cli scan \
+        --mode source \
+        --input "${MINOS_INPUT_SRC}" \
+        --regions "${MINOS_REGIONS}" \
+        --regulations "${MINOS_REGULATIONS}" \
+        --output-dir "${MINOS_OUTPUT_DIR}" \
+        --format "${MINOS_FORMAT_LOCAL}" \
+        --log-file "${MINOS_LOG_DIR}/scan.log" \
+        --log-level "${MINOS_LOG_LEVEL}"
+  artifacts:
+    when: always
+    paths:
+      - ${MINOS_OUTPUT_DIR}/*.json
+      - ${MINOS_OUTPUT_DIR}/*.html
+      - ${MINOS_LOG_DIR}/*.log
+
+scan_container:
+  stage: scan
+  image: docker:24.0.9
+  services:
+    - name: docker:24.0.9-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "/certs/client"
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - docker info
+    - docker build -f containers/Dockerfile -t minos:ci .
+    - mkdir -p "${MINOS_OUTPUT_DIR}" "${MINOS_LOG_DIR}"
+    - docker run --rm \
+        -v "$CI_PROJECT_DIR":/work \
+        -w /work \
+        -e MINOS_RULE_CACHE="${MINOS_RULE_CACHE}" \
+        minos:ci \
+        minos scan \
+          --mode both \
+          --input "${MINOS_INPUT_SRC}" \
+          --apk-path "${MINOS_APK_PATH}" \
+          --regions "${MINOS_REGIONS}" \
+          --regulations "${MINOS_REGULATIONS}" \
+          --output-dir "${MINOS_OUTPUT_DIR}" \
+          --format "${MINOS_FORMAT_CONTAINER}" \
+          --log-file "${MINOS_LOG_DIR}/scan-container.log" \
+          --log-level "${MINOS_LOG_LEVEL}"
+  artifacts:
+    when: always
+    paths:
+      - ${MINOS_OUTPUT_DIR}/*.json
+      - ${MINOS_OUTPUT_DIR}/*.html
+      - ${MINOS_LOG_DIR}/*.log

@@ -30,7 +30,7 @@ Story Points: 1
 3. - [ ] GitHub Actions 示例  
    - [x] 3.1 使用官方容器镜像/本地运行方式（可选）  
    - [x] 3.2 参数示例：地区/法规、输入路径、输出目录、log-level；缓存规则目录（可选）  
-   - [ ] 3.3 上传工件：HTML/JSON 报告、日志文件  
+   - [x] 3.3 上传工件：HTML/JSON 报告、日志文件  
 4. - [ ] GitLab CI 示例  
    - [ ] 4.1 stage/job 配置，镜像或本地运行方式  
    - [ ] 4.2 参数示例与缓存/工件收集配置  
@@ -111,3 +111,5 @@ flowchart TD
 - Assistant: 标记 Story-3 任务 2 完成
 - User: 执行任务3.2  
 - Assistant: 在 GitHub Actions 示例中参数化地区/法规/输入/输出/日志级别与缓存目录并勾选 3.2
+- User: 执行任务3.3  
+- Assistant: 确认 GitHub Actions 工件上传（HTML/JSON 报告与日志）配置并勾选 3.3

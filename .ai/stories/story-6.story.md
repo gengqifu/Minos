@@ -29,7 +29,7 @@ Story Points: 3
    - [x] 2.2 支持构建参数（PIP_INDEX_URL/HTTP_PROXY 等），预置规则缓存目录（空），ENTRYPOINT 使用 containers/entrypoint.sh  
 3. - [ ] 容器运行与缓存策略  
    - [x] 3.1 规则缓存挂载约定（默认 /root/.minos/rules），无网时示例命令；确保写权限  
-   - [ ] 3.2 输出目录挂载与权限（/work/output/reports），与 CLI 保持一致  
+   - [x] 3.2 输出目录挂载与权限（/work/output/reports），与 CLI 保持一致  
 4. - [ ] 容器验收与 smoke 测试  
    - [ ] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  
    - [ ] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  

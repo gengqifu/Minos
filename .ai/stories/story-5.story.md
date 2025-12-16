@@ -30,7 +30,7 @@ Story Points: 2
 3. - [x] CLI 实现与参数解析  
    - [x] 3.1 支持 --regions/--regulations/--mode/--output-dir/--format/--timeout/--threads/--log-level/--manifest/--apk-path/--config 等  
    - [x] 3.2 处理缺少输入时的清晰错误；支持多 APK/多变体列表；源码+APK 同时提供时顺序与结果并集  
-4. - [ ] 报告生成与输出  
+4. - [x] 报告生成与输出  
    - [x] 4.1 生成 HTML+JSON 报告，字段符合 PRD/架构 schema（meta/findings/stats）  
    - [x] 4.2 stdout 摘要：风险计数（分级）、报告路径、目标信息；可选详细日志文件  
 5. - [ ] Docker/OCI 镜像与本地运行支持  

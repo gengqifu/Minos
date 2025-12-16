@@ -41,8 +41,8 @@ Story Points: 1
    - [x] 6.1 动态 findings 与静态 findings 的合并规则（去重、优先级、来源标记=dynamic）  
    - [x] 6.2 报告新增字段：检测类型（static/dynamic）、时间戳、会话 ID（可选）  
 7. - [ ] 文档与验收  
-   - [ ] 7.1 预研结论文档：接口定义、样例输出、限制与风险（反调试、证书校验、自动化成本）  
-   - [ ] 7.2 验收：接口 schema 评审通过，样例输出与合并策略明确
+   - [x] 7.1 预研结论文档：接口定义、样例输出、限制与风险（反调试、证书校验、自动化成本）  
+   - [ ] 7.2 验收：接口 schema 评审通过，样例输出与合并策略明确  
 
 ## Constraints
 
@@ -137,3 +137,5 @@ flowchart TD
 - Assistant: 记录动态/静态合并策略并勾选 6.1
 - User: 执行任务6.2  
 - Assistant: 补充报告字段扩展（detection_type/timestamp/session）并勾选 6.2
+- User: 执行任务7.1  
+- Assistant: 补充预研结论与风险并勾选 7.1

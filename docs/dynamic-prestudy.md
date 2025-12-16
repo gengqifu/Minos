@@ -41,6 +41,15 @@
 - dynamic_override（可选）：当动态覆盖同一 rule/location 静态条目时标记为 true。  
 - 兼容性：保持 meta/findings/stats 三段结构，HTML/JSON 报告共用同一字段集；未使用的扩展字段可为空或缺省，不影响解析。
 
+## 预研结论与风险（7.1）
+
+- 接口定义：动态插件统一使用 input/output schema（见 dynamic/interfaces），与静态 findings 字段兼容；合并后报告继续采用 meta/findings/stats 结构。  
+- 样例输出：`dynamic/samples` 提供 Frida/mitmproxy 示例和合并脚本，可用于校验 schema 与去重逻辑。  
+- 运行模式建议：将动态检测放在 nightly/独立 CI job，避免阻塞主流程；失败时保留静态结果，动态错误不阻断。  
+- 风险/限制：需要设备/模拟器、frida-server 可用性、TLS Pinning 绕过成本；App 自动化触发路径不确定，可能导致无流量/无 Hook。  
+- 日志与错误：必须记录阶段日志（启动/流量/合并），缺少输出或超时返回非零或标注 status=error；stdout 摘要包含 dynamic/static 计数与报告路径。  
+- 数据安全：不上传业务数据，输出仅用于接口定义与样例；PII 仅作标签示例，实际环境需脱敏处理。
+
 ## TODO/风险
 
 - TLS Pinning 绕过、证书注入方案待与 mitmproxy 预研（见任务 5.x）。  

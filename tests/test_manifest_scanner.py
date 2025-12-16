@@ -12,7 +12,6 @@ def _write_manifest(tmp_path: Path, content: str) -> Path:
     return path
 
 
-@pytest.mark.xfail(raises=NotImplementedError, strict=True, reason="Manifest scanner not implemented yet")
 def test_sensitive_permission_hits(tmp_path: Path):
     manifest = """
     <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
@@ -28,7 +27,6 @@ def test_sensitive_permission_hits(tmp_path: Path):
     assert stats.get("count_by_regulation", {}).get("PIPL", 0) >= 1
 
 
-@pytest.mark.xfail(raises=NotImplementedError, strict=True, reason="Manifest scanner not implemented yet")
 def test_exported_component_hits(tmp_path: Path):
     manifest = """
     <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
@@ -46,8 +44,8 @@ def test_exported_component_hits(tmp_path: Path):
     assert stats.get("count_by_regulation", {}).get("GDPR", 0) >= 1
 
 
-@pytest.mark.xfail(raises=NotImplementedError, strict=True, reason="Manifest scanner not implemented yet")
 def test_invalid_manifest_errors(tmp_path: Path):
     manifest_path = _write_manifest(tmp_path, "<manifest><application></application>")
     rules = []
-    manifest_scanner.scan_manifest(manifest_path, rules, source_flags={})
+    with pytest.raises(manifest_scanner.ManifestScanError):
+        manifest_scanner.scan_manifest(manifest_path, rules, source_flags={})

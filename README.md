@@ -139,3 +139,5 @@
 - 迁移提示：目标仓库需具备 `requirements.txt`、`containers/Dockerfile`（如使用容器作业）以及扫描输入路径（示例使用 `tests`、`ci/fixtures/dummy.apk`）；如不需要容器作业可删除对应 job。触发事件、地区/法规参数与 artifact 路径可按需修改。
 - 可调参数示例：通过 env 修改 `MINOS_INPUT_SRC`（源码目录）、`MINOS_APK_PATH`（APK 路径）、`MINOS_REGIONS`/`MINOS_REGULATIONS`（地区/法规）、`MINOS_OUTPUT_DIR`/`MINOS_LOG_DIR`（输出/日志目录）、`MINOS_LOG_LEVEL`、`MINOS_FORMAT_LOCAL`/`MINOS_FORMAT_CONTAINER`（报告格式）以及 `MINOS_RULE_CACHE`（规则缓存目录）。
 - 工件上传：workflow 已包含 `actions/upload-artifact`，分别上传本地作业与容器作业的 HTML/JSON 报告与日志（默认 artifact 名称为 `minos-scan-local`、`minos-scan-container`），路径与 env 中的输出目录保持一致。
+- 受限/离线：提前 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 准备规则缓存，在 CI 中挂载或缓存 `MINOS_RULE_CACHE` 目录，不依赖在线下载。
+- 详细说明：见 `ci/README.md`，包含目录结构、参数与缓存配置、依赖要求、本地验证方法与离线提示。

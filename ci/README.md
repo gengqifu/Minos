@@ -1,0 +1,21 @@
+# CI 工作流示例说明
+
+## 目录结构
+
+- `github-actions/minos-scan.yml`：GitHub Actions 示例，包含本地 Python 与容器两种作业，上传 HTML/JSON 报告和日志工件。
+- `gitlab-ci/minos-scan.yml`：GitLab CI 示例，包含 `scan_local`（python:3.10-slim）与 `scan_container`（docker dind）两个 job，上传 HTML/JSON 报告和日志工件。
+- `tests/ci_workflow_smoke.sh`：本地/容器模拟 CI 的验收脚本，覆盖源码、源码+APK、缺少输入失败的场景。
+- `fixtures/`：CI 示例用的输入样例（源码与占位 APK）。
+
+## 使用指南
+
+- **复制/包含**：将对应 YAML 复制到目标仓库（GitHub: `.github/workflows/`；GitLab: `.gitlab-ci.yml` 或 include），按项目路径调整输入/输出参数。
+- **可调参数（env）**：`MINOS_INPUT_SRC`、`MINOS_APK_PATH`、`MINOS_REGIONS`、`MINOS_REGULATIONS`、`MINOS_OUTPUT_DIR`、`MINOS_LOG_DIR`、`MINOS_FORMAT_LOCAL`/`MINOS_FORMAT_CONTAINER`、`MINOS_LOG_LEVEL`、`MINOS_RULE_CACHE`。
+- **缓存与工件**：两套示例均支持规则缓存目录（GitHub 用 actions/cache，GitLab 用 cache），默认上传 `${MINOS_OUTPUT_DIR}/*.json|*.html` 与 `${MINOS_LOG_DIR}/*.log`。
+- **依赖与镜像**：需要 `requirements.txt` 与 `containers/Dockerfile`（若启用容器 job）；若不需要容器 job 可删除相关步骤。
+- **受限/离线**：提前在宿主机执行 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 准备规则缓存（可放置在制品库或预置在 Runner），CI 中通过挂载/缓存 `MINOS_RULE_CACHE` 目录复用，避免在线下载。
+
+## 本地验证
+
+- GitHub/GitLab 脚本均可用 `./ci/tests/ci_workflow_smoke.sh` 先行验收，确保报告/日志与退出码符合预期。
+- 没有 gitlab-runner 时，可直接运行脚本中的命令（或 README 的说明）模拟各 job。 

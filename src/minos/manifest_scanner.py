@@ -14,31 +14,41 @@ class ManifestScanError(Exception):
     """Manifest 扫描异常。"""
 
 
-def _load_manifest_content(manifest_input: Path) -> bytes:
+def _collect_manifest_contents(manifest_input: Path) -> List[bytes]:
     """
     支持三种输入：
     - 直接传入 AndroidManifest.xml 文件
-    - 传入源码目录（寻找 AndroidManifest.xml）
+    - 传入源码目录（寻找 AndroidManifest.xml，支持 src/main/AndroidManifest.xml 等主 Manifest）
     - 传入 APK（读取压缩包内的 AndroidManifest.xml，假设为可解析 XML）
     """
+    contents: List[bytes] = []
     if manifest_input.is_dir():
-        manifest_path = manifest_input / "AndroidManifest.xml"
-        if not manifest_path.exists():
-            raise ManifestScanError("目录中未找到 AndroidManifest.xml")
-        return manifest_path.read_bytes()
+        candidates = [
+            manifest_input / "AndroidManifest.xml",
+            manifest_input / "src/main/AndroidManifest.xml",
+            manifest_input / "app/src/main/AndroidManifest.xml",
+        ]
+        for c in candidates:
+            if c.exists():
+                contents.append(c.read_bytes())
+        if not contents:
+            raise ManifestScanError("目录中未找到 AndroidManifest.xml（含 src/main 路径）")
+        return contents
 
     if manifest_input.suffix.lower() == ".apk":
         try:
             with zipfile.ZipFile(manifest_input, "r") as zf:
                 content = zf.read("AndroidManifest.xml")
-                return content
+                contents.append(content)
+                return contents
         except KeyError:
             raise ManifestScanError("APK 中未找到 AndroidManifest.xml")
         except Exception as exc:
             raise ManifestScanError(f"读取 APK 失败: {exc}") from exc
 
     if manifest_input.exists():
-        return manifest_input.read_bytes()
+        contents.append(manifest_input.read_bytes())
+        return contents
 
     raise ManifestScanError(f"未找到 Manifest 输入: {manifest_input}")
 
@@ -48,6 +58,25 @@ def _parse_manifest_content(content: bytes) -> ET.Element:
         return ET.fromstring(content)
     except Exception as exc:
         raise ManifestScanError(f"解析 Manifest 失败: {exc}") from exc
+
+
+def _merge_roots(roots: List[ET.Element]) -> ET.Element:
+    """合并多个 Manifest：合并 uses-permission 和 application 下的组件。"""
+    if not roots:
+        raise ManifestScanError("未提供可用的 Manifest 解析结果")
+    base = roots[0]
+    base_app = base.find("application")
+    if base_app is None:
+        base_app = ET.SubElement(base, "application")
+
+    for other in roots[1:]:
+        for perm in other.findall("uses-permission"):
+            base.append(perm)
+        other_app = other.find("application")
+        if other_app is not None:
+            for child in list(other_app):
+                base_app.append(child)
+    return base
 
 
 def _match_permission(root: ET.Element, rule: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -106,8 +135,9 @@ def scan_manifest(
     - 权限：{"rule_id": "...", "type": "permission", "pattern": "android.permission.ACCESS_FINE_LOCATION", "regulation": "...", "severity": "..."}
     - 组件：{"rule_id": "...", "type": "component", "component": "activity", "regulation": "...", "severity": "..."}
     """
-    content = _load_manifest_content(manifest_path)
-    root = _parse_manifest_content(content)
+    contents = _collect_manifest_contents(manifest_path)
+    roots = [_parse_manifest_content(c) for c in contents]
+    root = _merge_roots(roots)
     findings: List[Dict[str, Any]] = []
 
     for rule in rules:

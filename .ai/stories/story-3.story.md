@@ -27,9 +27,9 @@ Story Points: 2
 2. - [x] 实现测试用例（自动化）  
    - [x] 2.1 编写解析/匹配/报告输出的测试用例，覆盖上述场景与断言（已实现 manifest_scanner 逻辑）  
    - [x] 2.2 支持本地与 CI 运行，验证退出码与日志内容（pytest -q 全部通过）  
-3. - [ ] Manifest 解析与输入处理  
+3. - [x] Manifest 解析与输入处理  
    - [x] 3.1 支持 APK 解包与源码路径直接读取 Manifest  
-   - [ ] 3.2 处理多变体/多 manifest 合并策略（至少支持主 Manifest）  
+   - [x] 3.2 处理多变体/多 manifest 合并策略（至少支持主 Manifest）  
 4. - [ ] 规则匹配实现  
    - [ ] 4.1 权限规则匹配（必要性/敏感权限）  
    - [ ] 4.2 导出组件规则匹配（activity/service/provider/exported 属性、权限保护）  

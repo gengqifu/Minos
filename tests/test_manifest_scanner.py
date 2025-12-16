@@ -58,19 +58,35 @@ def test_invalid_manifest_errors(tmp_path: Path):
 
 
 def test_scan_from_directory(tmp_path: Path):
-    manifest = """
+    manifest_main = """
     <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
       <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     </manifest>
     """
+    manifest_flavor = """
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+      <application>
+        <activity android:name=".ExposedActivity" android:exported="true"/>
+      </application>
+    </manifest>
+    """
     project_dir = tmp_path / "project"
     project_dir.mkdir()
-    _write_manifest(project_dir, manifest)
+    _write_manifest(project_dir, manifest_main)
+    flavor_dir = project_dir / "src/main"
+    flavor_dir.mkdir(parents=True, exist_ok=True)
+    (flavor_dir / "AndroidManifest.xml").write_text(manifest_flavor, encoding="utf-8")
     rules = [
         _make_rule("PERM_SENSITIVE_LOCATION", "permission", pattern="android.permission.ACCESS_FINE_LOCATION", regulation="PIPL", severity="high"),
+        _make_rule("EXPORTED_ACTIVITY", "component", component="activity", regulation="GDPR", severity="high"),
     ]
-    findings, _ = manifest_scanner.scan_manifest(project_dir, rules, source_flags={"PERM_SENSITIVE_LOCATION": "region"})
+    findings, _ = manifest_scanner.scan_manifest(
+        project_dir,
+        rules,
+        source_flags={"PERM_SENSITIVE_LOCATION": "region", "EXPORTED_ACTIVITY": "region"},
+    )
     assert any(f["rule_id"] == "PERM_SENSITIVE_LOCATION" for f in findings)
+    assert any(f["rule_id"] == "EXPORTED_ACTIVITY" for f in findings)
 
 
 def test_scan_from_apk_with_plain_manifest(tmp_path: Path):

@@ -34,7 +34,7 @@ Story Points: 1
 4. - [x] 预研 Frida 集成路径  
    - [x] 4.1 如何注入/启动 Frida server、脚本示例、常见反调试绕过思路（记录，不实现）  
    - [x] 4.2 Hook 重点：敏感 API 调用、标识收集、出网目标；输出映射到 findings 格式  
-5. - [ ] 预研 mitmproxy/流量捕获路径  
+5. - [x] 预研 mitmproxy/流量捕获路径  
    - [x] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
    - [x] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
 6. - [ ] 合并与报告策略  

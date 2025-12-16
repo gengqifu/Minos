@@ -21,9 +21,9 @@ Story Points: 1
 
 ## Tasks
 
-1. - [ ] 设计预研用例（TDD 先行，偏设计验收）  
+1. - [x] 设计预研用例（TDD 先行，偏设计验收）  
    - [x] 1.1 覆盖：Frida Hook 输出格式、mitmproxy 流量标签、与静态 findings 合并、错误与超时处理  
-   - [ ] 1.2 断言：接口返回 schema、合并后报告字段一致性、退出码与日志规范  
+   - [x] 1.2 断言：接口返回 schema、合并后报告字段一致性、退出码与日志规范  
 2. - [ ] 实现测试用例/样例（自动化或可运行样例）  
    - [ ] 2.1 提供 schema 校验、合并逻辑的自动化测试或可运行样例（含动态/静态合并）  
    - [ ] 2.2 覆盖错误/超时/无输出等场景的断言  
@@ -97,7 +97,21 @@ flowchart TD
 - 错误与超时：无输出/超时/异常时返回非零或标注 `status=error`，日志包含错误原因，报告中不生成空 findings。  
 - 输出格式：定义共用 JSON schema（动态/静态共用字段+动态扩展），确保可与现有报告生成兼容。
 
+## Assertions（设计）
+
+- Schema：接口/样例输出必须符合统一 JSON schema（字段：type/source/rule_id/regulation/severity/location/evidence/timestamp/session/status），静态/动态字段并集兼容现有报告 meta/findings/stats。  
+- 合并一致性：合并后报告保持 meta/findings/stats 三段，findings 标记 `detection_type=static|dynamic`，去重键=rule_id+location+source；stats 汇总包含动态来源的计数。  
+- 退出码：接口/脚本成功返回 0；缺少输入、超时或解析失败返回非零；存在 findings 不导致失败（无阻断）。  
+- 日志规范：日志必须包含阶段信息（hook 启动/流量截获/合并）、错误原因（缺少输出/超时）、输出路径；stdout 摘要包含 dynamic/static 计数与报告路径。  
+- 错误场景：Frida 未连接/mitmproxy 无流量时应记录 warning 或 error，并返回非零退出码或显式 status=error，且不输出空 findings；超时应中止并给出超时提示。
+
 ## Chat Command Log
 
 - User: 生成下一个 story  
-- Assistant: 起草 Epic-N Story-1（动态流量与运行时检测预研）草稿
+- Assistant: 起草 Epic-N Story-1（动态流量与运行时检测预研）草稿  
+- User: [story-8.story.md](.ai/stories/story-8.story.md) 执行任务1.1  
+- Assistant: 设计动态检测预研覆盖用例并勾选 1.1  
+- User: 执行任务1.2  
+- Assistant: 补充断言（schema/合并/退出码/日志）并勾选 1.2  
+- User: 标记任务1完成  
+- Assistant: 标记 Story-8 任务 1 完成

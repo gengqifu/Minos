@@ -1,75 +1,95 @@
-# Epic-4 - Story-2
-# 容器化交付与发布
+# Epic-N - Story-1
+# 动态流量与运行时检测预研（Frida/mitmproxy 接口预留）
 
-**As a** CI/DevOps 用户  
-**I want** 提供可直接使用的 Docker/OCI 镜像并有验证脚本  
-**so that** CI/CD 与本地能统一运行扫描并复用规则缓存
+**As a** 合规/安全研究员  
+**I want** 预研动态检测方案（Frida Hook 与 mitmproxy 流量抓取）的接口与集成路径  
+**so that** 为后续版本提供可插拔的运行时与流量检测能力
 
 ## Status
 
-Draft
+Approved
 
 ## Context
 
-- 延续 Epic-4（CI 集成与报告输出），在 Story-1 已实现 CLI/报告基础能力。  
-- 目前仅有容器入口占位和文档示例，缺少可用镜像（Dockerfile）、依赖安装、构建/推送流程与容器内验收。  
-- 目标：本地与 CI 均可通过官方镜像运行扫描（含规则缓存挂载），输出 HTML+JSON 报告与 stdout 摘要。
+- Epic-N 为后续迭代，当前仅做预研与接口定义，不在首版发布范围。  
+- 目标：界定可插拔的运行时（Frida/Xposed）与流量检测（mitmproxy/pcap）接口，定义输出格式与与静态结果的合并策略。  
+- 需与 PRD 的规则数据驱动、报告字段、日志要求保持一致；不破坏现有 CI 流程（可放 nightly 或独立任务）。
 
 ## Estimation
 
-Story Points: 3
+Story Points: 1
 
 ## Tasks
 
-1. - [ ] 设计与实现测试（TDD 先行）  
-   - [ ] 1.1 设计容器化验收：构建镜像、运行 smoke（source 模式、apk 模式）、报告生成与摘要校验、无网缓存挂载场景  
-   - [ ] 1.2 实现自动化测试/脚本（或 CI 示例）验证镜像可用性与退出码  
-2. - [ ] Docker/OCI 镜像构建  
-   - [ ] 2.1 Dockerfile：基础镜像（python 3.10+，含 unzip/zip，必要时 openjdk 17）、安装依赖、复制源码、设置工作目录/ENTRYPOINT  
-   - [ ] 2.2 支持构建参数（PIP_INDEX_URL/HTTP_PROXY 等），预置规则缓存目录（空），ENTRYPOINT 使用 containers/entrypoint.sh  
-3. - [ ] 容器运行与缓存策略  
-   - [ ] 3.1 规则缓存挂载约定（默认 /root/.minos/rules），无网时示例命令；确保写权限  
-   - [ ] 3.2 输出目录挂载与权限（/work/output/reports），与 CLI 保持一致  
-4. - [ ] 容器验收与 smoke 测试  
-   - [ ] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  
-   - [ ] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  
-   - [ ] 4.3 （可选）CI 示例脚本：构建镜像 + 运行 smoke，生成工件  
-5. - [ ] 文档与发布  
-   - [ ] 5.1 更新 README/containers/README：构建命令、运行示例、规则缓存挂载、受限网络提示、标签/发布约定  
-   - [ ] 5.2 标注镜像标签策略（如与 git tag 同步），占位推送命令（docker push/oci），列出依赖/体积注意事项  
+1. - [ ] 设计预研用例（TDD 先行，偏设计验收）  
+   - [ ] 1.1 覆盖：Frida Hook 输出格式、mitmproxy 流量标签、与静态 findings 合并、错误与超时处理  
+   - [ ] 1.2 断言：接口返回 schema、合并后报告字段一致性、退出码与日志规范  
+2. - [ ] 实现测试用例/样例（自动化或可运行样例）  
+   - [ ] 2.1 提供 schema 校验、合并逻辑的自动化测试或可运行样例（含动态/静态合并）  
+   - [ ] 2.2 覆盖错误/超时/无输出等场景的断言  
+3. - [ ] 定义动态检测插件接口  
+   - [ ] 3.1 插件元数据（名称、版本、支持的 hook/流量类型）  
+   - [ ] 3.2 输入/输出 schema（与静态 findings 兼容：rule_id/位置/证据/严重级别/来源标记）  
+   - [ ] 3.3 生命周期与运行模式（nightly/独立 CI job），超时与失败策略  
+4. - [ ] 预研 Frida 集成路径  
+   - [ ] 4.1 如何注入/启动 Frida server、脚本示例、常见反调试绕过思路（记录，不实现）  
+   - [ ] 4.2 Hook 重点：敏感 API 调用、标识收集、出网目标；输出映射到 findings 格式  
+5. - [ ] 预研 mitmproxy/流量捕获路径  
+   - [ ] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
+   - [ ] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
+6. - [ ] 合并与报告策略  
+   - [ ] 6.1 动态 findings 与静态 findings 的合并规则（去重、优先级、来源标记=dynamic）  
+   - [ ] 6.2 报告新增字段：检测类型（static/dynamic）、时间戳、会话 ID（可选）  
+7. - [ ] 文档与验收  
+   - [ ] 7.1 预研结论文档：接口定义、样例输出、限制与风险（反调试、证书校验、自动化成本）  
+   - [ ] 7.2 验收：接口 schema 评审通过，样例输出与合并策略明确
 
 ## Constraints
 
-- 兼容无网/受限网络：规则缓存需可挂载；镜像不强依赖外部拉取。  
-- 保持与现有 CLI/报告格式一致；不上传扫描数据。  
-- 容器执行需在非特权环境可运行，尽量避免 root-only 操作。
+- 不在首版交付范围，不破坏现有 CI 路径；可作为 nightly/独立任务。  
+- 不上传业务数据；预研输出仅为接口定义与样例。  
+- 与现有报告/日志/规则格式兼容（字段一致）。
+
+## Data Models / Schema
+
+- 动态检测输出示例：
+
+```json
+{
+  "type": "dynamic",
+  "source": "frida",
+  "rule_id": "RUNTIME_ID_ACCESS",
+  "regulation": "GDPR",
+  "severity": "medium",
+  "location": "com.example.MainActivity#getDeviceId()",
+  "evidence": "IMEI accessed at runtime",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "session": "run-001"
+}
+```
 
 ## Structure
 
-- `containers/Dockerfile`：镜像构建脚本  
-- `containers/entrypoint.sh`：入口（已有，占位），需在 Dockerfile 中引用  
-- `containers/README.md`：容器使用/构建说明  
-- `scripts/`（可选）：容器 smoke/CI 示例
+- `dynamic/interfaces/`：插件接口与 schema 定义  
+- `dynamic/samples/`：示例 Frida/mitmproxy 输出  
+- `docs/dynamic-prestudy.md`：预研结论与限制
 
 ## Diagrams
 
 ```mermaid
 flowchart TD
-    BUILD["Docker build (Dockerfile)"] --> IMG["minos:tag"]
-    RULES["宿主规则缓存 (~/.minos/rules)"] -->|挂载| IMG
-    SRC["源码/APK 输出目录"] -->|挂载| IMG
-    IMG --> RUN["容器内执行 minos scan"]
-    RUN --> REPORT["输出 HTML/JSON"]
-    RUN --> SUMMARY["stdout 摘要"]
+    HOOK["Frida/Hook 脚本"] --> DYN["动态 findings (runtime)"]
+    PROXY["mitmproxy/pcap"] --> DYN
+    DYN --> MERGE["合并器 (静态+动态)"]
+    MERGE --> REPORT["报告生成 (标注检测类型)"]
 ```
 
 ## Dev Notes
 
-- 基础镜像推荐 slim 以减小体积；若需要 JDK 可选择带 JRE 的变体或安装 openjdk-17-jre-headless。  
-- 统一工作目录 /work，ENTRYPOINT 调用 `python -m minos.cli`，允许覆盖 CMD。  
-- Smoke 测试可使用现有示例源码/假 APK，关注退出码与报告路径。  
-- TDD：先写容器 smoke 测试/脚本，再补 Dockerfile 与文档。
+- 聚焦接口与格式，不落实现码；记录绕过与限制，作为后续开发参考。  
+- TDD：以 schema/合并逻辑的测试与样例输出作为验收基线。
 
 ## Chat Command Log
 
-- User: 新建 story 用来实现容器化交付，并更新相关文档。参考模板，遵循 TDD。  
+- User: 生成下一个 story  
+- Assistant: 起草 Epic-N Story-1（动态流量与运行时检测预研）草稿

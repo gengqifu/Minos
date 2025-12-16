@@ -208,6 +208,13 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 集成 GitHub Actions/GitLab CI 样例  
   - 支持 PR 级快速扫描与发布前深度扫描  
 
+- Story 3: 容器化交付与发布  
+  Status:  
+  Requirements:  
+  - 提供可构建的 Docker/OCI 镜像（Dockerfile、入口脚本）  
+  - 支持规则缓存挂载与无网运行；输出路径与本地一致  
+  - 提供构建/运行示例与 smoke 验收（报告生成、退出码/摘要校验）  
+
 ## Epic-N: Story List
 
 - Story 1: 动态流量与运行时检测（预研）  

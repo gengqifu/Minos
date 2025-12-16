@@ -131,3 +131,8 @@
 - 行为与容器运行一致：报告路径/格式、stdout 摘要字段相同；缺少输入时返回非零并提示。
 - 输出路径：默认写入 `output/reports/{scan.json,scan.html}`（可通过 `--output-dir`/`--report-name` 覆盖）；日志可选 `--log-file`（支持轮转）。
 - 受限网络提示：提前执行 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 缓存规则，再在离线环境使用。
+
+### CI 工作流示例
+
+- GitHub Actions：参考 `ci/github-actions/minos-scan.yml`，包含本地 Python 运行与容器运行两种作业，输出报告/日志工件。可复制到目标仓库的 `.github/workflows/` 并根据项目路径调整 `--input/--apk-path/--format`、输出目录、缓存参数等。
+- 迁移提示：目标仓库需具备 `requirements.txt`、`containers/Dockerfile`（如使用容器作业）以及扫描输入路径（示例使用 `tests`、`ci/fixtures/dummy.apk`）；如不需要容器作业可删除对应 job。触发事件、地区/法规参数与 artifact 路径可按需修改。

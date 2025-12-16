@@ -109,6 +109,40 @@ def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
     assert "by_severity" in captured.out
 
 
+def test_scan_cli_log_file(tmp_path: Path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "Main.java").write_text("class Main {}")
+    out_dir = tmp_path / "out"
+    log_file = tmp_path / "logs/scan.log"
+
+    exit_code = cli.main(
+        [
+            "scan",
+            "--mode",
+            "source",
+            "--input",
+            str(src_dir),
+            "--output-dir",
+            str(out_dir),
+            "--format",
+            "json",
+            "--log-file",
+            str(log_file),
+            "--log-level",
+            "debug",
+            "--log-max-bytes",
+            "1024",
+            "--log-backup",
+            "2",
+        ]
+    )
+    assert exit_code == 0
+    assert log_file.exists()
+    content = log_file.read_text()
+    assert "INFO" in content or "DEBUG" in content
+
+
 def test_scan_cli_regions_regs_threads(tmp_path: Path):
     src_dir = tmp_path / "src"
     src_dir.mkdir()

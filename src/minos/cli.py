@@ -4,6 +4,8 @@ Minos CLI 入口（rulesync 子命令）。
 
 import argparse
 import json
+import logging
+from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
 
@@ -69,6 +71,9 @@ def _add_scan_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--threads", type=int, default=4, help="并行度（默认4）")
     parser.add_argument("--timeout", type=int, help="全局超时（秒，可选）")
     parser.add_argument("--log-level", dest="log_level", default="info", choices=["debug", "info", "warn", "error"], help="日志级别")
+    parser.add_argument("--log-file", dest="log_file", help="可选日志文件路径")
+    parser.add_argument("--log-max-bytes", dest="log_max_bytes", type=int, default=0, help="日志文件轮转大小，0 表示不轮转")
+    parser.add_argument("--log-backup", dest="log_backup", type=int, default=3, help="日志轮转保留文件数")
     parser.add_argument("--config", dest="config", help="配置文件路径（可选）")
     parser.set_defaults(handler=_handle_scan)
 
@@ -114,20 +119,46 @@ def _write_report(output_dir: Path, report_name: str, data: dict, fmt: str) -> N
 
 
 def _handle_scan(args: argparse.Namespace) -> int:
+    # 日志初始化
+    log_level = getattr(logging, args.log_level.upper(), logging.INFO)
+    logging.basicConfig(
+        level=log_level,
+        format="%(levelname)s %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
+        force=True,
+    )
+    if args.log_file:
+        log_handlers = []
+        Path(args.log_file).parent.mkdir(parents=True, exist_ok=True)
+        if args.log_max_bytes and args.log_max_bytes > 0:
+            log_handlers.append(
+                RotatingFileHandler(args.log_file, maxBytes=args.log_max_bytes, backupCount=max(args.log_backup, 1))
+            )
+        else:
+            log_handlers.append(logging.FileHandler(args.log_file))
+        for h in log_handlers:
+            h.setLevel(log_level)
+            h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+            logging.getLogger().addHandler(h)
+
     inputs = args.inputs or []
     apks = args.apks or []
     manifests = args.manifests or []
     needs_src = args.mode in {"source", "both"}
     needs_apk = args.mode in {"apk", "both"}
 
+    logging.info("scan start mode=%s inputs=%s apks=%s manifests=%s", args.mode, inputs, apks, manifests)
     if needs_src and not inputs and needs_apk and not apks:
         sys.stderr.write("[scan] 缺少输入：请指定 --input 或 --apk-path\n")
+        logging.error("no inputs for mode=%s", args.mode)
         return 2
     if needs_src and not inputs:
         sys.stderr.write("[scan] 缺少源码输入 (--input)\n")
+        logging.error("missing source inputs")
         return 2
     if needs_apk and not apks:
         sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
+        logging.error("missing apk inputs")
         return 2
 
     meta_inputs = inputs + apks + manifests
@@ -152,6 +183,13 @@ def _handle_scan(args: argparse.Namespace) -> int:
     if args.format in {"both", "html"}:
         report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.html"))
     # stdout 摘要：风险计数（当前 demo 为 0）、报告路径、目标信息
+    logging.info(
+        "scan summary findings=%s by_reg=%s by_sev=%s reports=%s",
+        len(report.get("findings", [])),
+        report["stats"]["count_by_regulation"],
+        report["stats"]["count_by_severity"],
+        report_paths,
+    )
     sys.stdout.write(
         f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 "
         f"by_regulation={report['stats']['count_by_regulation']} "

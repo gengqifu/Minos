@@ -78,6 +78,8 @@ def _write_report(output_dir: Path, report_name: str, data: dict, fmt: str) -> N
     if fmt in {"both", "json"}:
         (output_dir / f"{report_name}.json").write_text(json.dumps(data, ensure_ascii=False, indent=2))
     if fmt in {"both", "html"}:
+        meta = data.get("meta", {})
+        stats = data.get("stats", {})
         rows = "\n".join(
             [
                 "<tr>"
@@ -93,8 +95,15 @@ def _write_report(output_dir: Path, report_name: str, data: dict, fmt: str) -> N
         html = f"""<!DOCTYPE html>
 <html><body>
 <h3>Minos Scan Report</h3>
-<p>Inputs: {', '.join(data['meta']['inputs'])}</p>
+<p>Mode: {meta.get('mode','')}</p>
+<p>Inputs: {', '.join(meta.get('inputs', []))}</p>
+<p>Regions: {', '.join(meta.get('regions', []))}</p>
+<p>Regulations: {', '.join(meta.get('regulations', []))}</p>
+<p>Threads: {meta.get('threads','')}</p>
+<p>Timeout: {meta.get('timeout','')}</p>
 <p>Findings: {len(data.get('findings', []))}</p>
+<p>Stats by regulation: {stats.get('count_by_regulation', {})}</p>
+<p>Stats by severity: {stats.get('count_by_severity', {})}</p>
 <table border="1" cellpadding="4" cellspacing="0">
 <thead><tr><th>rule_id</th><th>regulation</th><th>severity</th><th>location</th><th>evidence</th></tr></thead>
 <tbody>{rows}</tbody>

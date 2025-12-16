@@ -33,6 +33,15 @@ def test_scan_cli_source_mode_and_format(tmp_path: Path):
     assert exit_code == 0
     assert (out_dir / "scan.json").exists()
     assert (out_dir / "scan.html").exists()
+    data = json.loads((out_dir / "scan.json").read_text())
+    assert set(data.keys()) == {"meta", "findings", "stats"}
+    assert data["meta"]["mode"] == "source"
+    assert data["meta"]["inputs"] == [str(src_dir)]
+    assert "count_by_regulation" in data["stats"]
+    assert "count_by_severity" in data["stats"]
+    html = (out_dir / "scan.html").read_text()
+    assert "Minos Scan Report" in html
+    assert "Findings" in html
 
 
 def test_scan_cli_apk_mode(tmp_path: Path):

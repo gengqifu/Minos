@@ -31,9 +31,9 @@ Story Points: 1
    - [x] 3.1 插件元数据（名称、版本、支持的 hook/流量类型）  
    - [x] 3.2 输入/输出 schema（与静态 findings 兼容：rule_id/位置/证据/严重级别/来源标记）  
    - [x] 3.3 生命周期与运行模式（nightly/独立 CI job），超时与失败策略  
-4. - [ ] 预研 Frida 集成路径  
-   - [ ] 4.1 如何注入/启动 Frida server、脚本示例、常见反调试绕过思路（记录，不实现）  
-   - [ ] 4.2 Hook 重点：敏感 API 调用、标识收集、出网目标；输出映射到 findings 格式  
+4. - [x] 预研 Frida 集成路径  
+   - [x] 4.1 如何注入/启动 Frida server、脚本示例、常见反调试绕过思路（记录，不实现）  
+   - [x] 4.2 Hook 重点：敏感 API 调用、标识收集、出网目标；输出映射到 findings 格式  
 5. - [ ] 预研 mitmproxy/流量捕获路径  
    - [ ] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
    - [ ] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
@@ -125,3 +125,9 @@ flowchart TD
 - Assistant: 补充输入/输出 schema（兼容静态字段，含错误场景）并勾选 3.2
 - User: 标记任务3完成  
 - Assistant: 标记 Story-8 任务 3 完成
+- User: 执行任务4.1  
+- Assistant: 在 docs/dynamic-prestudy.md 记录 Frida 启动/反调试绕过思路并勾选 4.1
+- User: 执行任务4.2  
+- Assistant: 补充 mitmproxy/流量预研输出映射并勾选 4.2  
+- User: 标记任务4完成  
+- Assistant: 标记 Story-8 任务 4 完成

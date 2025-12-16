@@ -23,7 +23,7 @@ Story Points: 2
 
 1. - [ ] 设计测试用例（TDD 先行）  
    - [x] 1.1 覆盖：已知追踪/广告 SDK 命中、敏感 API 命中、可疑域名/字符串命中、未命中、规则缺失、映射来源标记透传  
-   - [ ] 1.2 断言：命中列表（rule_id、法规、来源标记）、位置（文件/类/行）、严重级别、退出码与日志  
+   - [x] 1.2 断言：命中列表（rule_id、法规、来源标记）、位置（文件/类/行）、严重级别、退出码与日志  
 2. - [ ] 实现测试用例（自动化）  
    - [ ] 2.1 编写 SDK/API/字符串扫描的测试用例，覆盖命中/未命中/规则缺失等场景  
    - [ ] 2.2 支持本地与 CI 运行，验证退出码与日志内容  
@@ -99,6 +99,14 @@ flowchart TD
 - 规则缺失/加载失败：给出清晰错误或退出码，不默默失败。  
 - 来源标记：findings 中 source 与映射结果一致（region/manual）。  
 - 输出字段：findings 包含 rule_id/regulation/source/location/evidence/recommendation/severity；stats 按 severity/regulation 汇总。
+
+## Assertions (for tests)
+
+- findings：包含 rule_id、regulation、source（region/manual）、location（文件/类/行）、evidence、recommendation、severity。  
+- stats：按 severity/regulation 聚合计数，与命中列表对应；未命中时为零。  
+- 错误与退出码：规则缺失/输入无效等场景返回预期退出码与日志，不默默失败。  
+- 来源标记：命中项的 source 与映射结果一致；手动添加的规则标记为 manual。  
+- 日志摘要：包含扫描目标、命中计数、报告路径（待实现时校验）。
 
 ## Chat Command Log
 

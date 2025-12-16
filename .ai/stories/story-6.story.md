@@ -7,7 +7,7 @@
 
 ## Status
 
-Draft
+Approved
 
 ## Context
 
@@ -83,3 +83,5 @@ flowchart TD
 ## Chat Command Log
 
 - User: 新建 story 用来实现容器化交付，并更新相关文档。参考模板，遵循 TDD。  
+- User: [story-6.story.md](.ai/stories/story-6.story.md) 批准story  
+- Assistant: 更新状态为 Approved

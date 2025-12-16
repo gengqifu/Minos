@@ -15,7 +15,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL} \
     http_proxy=${HTTP_PROXY} \
     https_proxy=${HTTPS_PROXY} \
-    no_proxy=${NO_PROXY}
+    no_proxy=${NO_PROXY} \
+    PYTHONPATH=/work/src
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends zip unzip ca-certificates && \
@@ -24,14 +25,10 @@ RUN apt-get update && \
 WORKDIR /work
 
 COPY src src
-COPY README.md pyproject.toml* requirements.txt* /work/
+COPY README.md /work/
 COPY containers/entrypoint.sh /entrypoint.sh
 # 预置规则缓存目录（空），便于挂载覆盖
 RUN mkdir -p /root/.minos/rules
 RUN chmod +x /entrypoint.sh
-
-# 安装依赖（如果有 requirements.txt 则优先）
-RUN if [ -f requirements.txt ]; then pip install -r requirements.txt; fi && \
-    pip install -e .
 
 ENTRYPOINT ["/entrypoint.sh"]

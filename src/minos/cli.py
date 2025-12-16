@@ -60,9 +60,16 @@ def _add_scan_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--mode", choices=["source", "apk", "both"], default="both", help="扫描模式")
     parser.add_argument("--input", dest="inputs", action="append", help="源码目录（可多次传入）")
     parser.add_argument("--apk-path", dest="apks", action="append", help="APK 路径（可多次传入）")
+    parser.add_argument("--manifest", dest="manifests", action="append", help="Manifest 路径（可多次传入）")
+    parser.add_argument("--regions", dest="regions", action="append", help="地区代码（可多选）")
+    parser.add_argument("--regulations", dest="regulations", action="append", help="法规标识（可多选）")
     parser.add_argument("--format", choices=["html", "json", "both"], default="both", help="报告格式")
     parser.add_argument("--output-dir", dest="output_dir", default="output/reports", help="报告输出目录")
     parser.add_argument("--report-name", dest="report_name", default="scan", help="报告文件前缀")
+    parser.add_argument("--threads", type=int, default=4, help="并行度（默认4）")
+    parser.add_argument("--timeout", type=int, help="全局超时（秒，可选）")
+    parser.add_argument("--log-level", dest="log_level", default="info", choices=["debug", "info", "warn", "error"], help="日志级别")
+    parser.add_argument("--config", dest="config", help="配置文件路径（可选）")
     parser.set_defaults(handler=_handle_scan)
 
 
@@ -100,6 +107,7 @@ def _write_report(output_dir: Path, report_name: str, data: dict, fmt: str) -> N
 def _handle_scan(args: argparse.Namespace) -> int:
     inputs = args.inputs or []
     apks = args.apks or []
+    manifests = args.manifests or []
     needs_src = args.mode in {"source", "both"}
     needs_apk = args.mode in {"apk", "both"}
 
@@ -113,19 +121,29 @@ def _handle_scan(args: argparse.Namespace) -> int:
         sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
         return 2
 
-    meta_inputs = inputs + apks
+    meta_inputs = inputs + apks + manifests
     report = {
         "meta": {
             "inputs": meta_inputs,
             "mode": args.mode,
+            "regions": args.regions or [],
+            "regulations": args.regulations or [],
+            "threads": args.threads,
+            "timeout": args.timeout,
+            "log_level": args.log_level,
+            "config": args.config,
         },
         "findings": [],
         "stats": {"count_by_regulation": {}, "count_by_severity": {}},
     }
     _write_report(Path(args.output_dir), args.report_name, report, args.format)
+    report_paths = []
+    if args.format in {"both", "json"}:
+        report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.json"))
+    if args.format in {"both", "html"}:
+        report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.html"))
     sys.stdout.write(
-        f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 "
-        f"report={Path(args.output_dir)/ (args.report_name + ('.json' if args.format!='html' else '.html'))}\n"
+        f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 reports={report_paths}\n"
     )
     return 0
 

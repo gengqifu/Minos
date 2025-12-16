@@ -28,7 +28,7 @@ Story Points: 2
    - [x] 2.1 编写 CLI/报告/容器入口的测试，覆盖参数、输出、摘要、错误场景  
    - [x] 2.2 支持本地与 CI 运行，验证报告 schema、退出码与日志  
 3. - [ ] CLI 实现与参数解析  
-   - [ ] 3.1 支持 --regions/--regulations/--mode/--output-dir/--format/--timeout/--threads/--log-level/--manifest/--apk-path/--config 等  
+   - [x] 3.1 支持 --regions/--regulations/--mode/--output-dir/--format/--timeout/--threads/--log-level/--manifest/--apk-path/--config 等  
    - [ ] 3.2 处理缺少输入时的清晰错误；支持多 APK/多变体列表；源码+APK 同时提供时顺序与结果并集  
 4. - [ ] 报告生成与输出  
    - [ ] 4.1 生成 HTML+JSON 报告，字段符合 PRD/架构 schema（meta/findings/stats）  

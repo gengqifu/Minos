@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from minos import cli
 
@@ -80,4 +81,43 @@ def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
     captured = capsys.readouterr()
     assert exit_code == 0
     assert "findings=0" in captured.out
-    assert "report" in captured.out
+    assert "reports=" in captured.out
+
+
+def test_scan_cli_regions_regs_threads(tmp_path: Path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "Main.java").write_text("class Main {}")
+    out_dir = tmp_path / "out"
+
+    exit_code = cli.main(
+        [
+            "scan",
+            "--mode",
+            "source",
+            "--input",
+            str(src_dir),
+            "--regions",
+            "eu",
+            "--regions",
+            "us",
+            "--regulations",
+            "gdpr",
+            "--threads",
+            "2",
+            "--timeout",
+            "30",
+            "--log-level",
+            "debug",
+            "--output-dir",
+            str(out_dir),
+            "--format",
+            "json",
+        ]
+    )
+    assert exit_code == 0
+    data = json.loads((out_dir / "scan.json").read_text())
+    assert data["meta"]["regions"] == ["eu", "us"]
+    assert data["meta"]["regulations"] == ["gdpr"]
+    assert data["meta"]["threads"] == 2
+    assert data["meta"]["timeout"] == 30

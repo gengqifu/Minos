@@ -22,7 +22,7 @@ Story Points: 1
 ## Tasks
 
 1. - [ ] 设计预研用例（TDD 先行，偏设计验收）  
-   - [ ] 1.1 覆盖：Frida Hook 输出格式、mitmproxy 流量标签、与静态 findings 合并、错误与超时处理  
+   - [x] 1.1 覆盖：Frida Hook 输出格式、mitmproxy 流量标签、与静态 findings 合并、错误与超时处理  
    - [ ] 1.2 断言：接口返回 schema、合并后报告字段一致性、退出码与日志规范  
 2. - [ ] 实现测试用例/样例（自动化或可运行样例）  
    - [ ] 2.1 提供 schema 校验、合并逻辑的自动化测试或可运行样例（含动态/静态合并）  
@@ -88,6 +88,14 @@ flowchart TD
 
 - 聚焦接口与格式，不落实现码；记录绕过与限制，作为后续开发参考。  
 - TDD：以 schema/合并逻辑的测试与样例输出作为验收基线。
+
+## Test Plan（设计）
+
+- Frida Hook 输出：样例 JSON 含 `type=dynamic`、`source=frida`、`rule_id/region/severity/location/evidence/timestamp/session`，覆盖敏感 API Hook（ID/网络/位置）。  
+- mitmproxy 输出：流量条目含 `source=mitmproxy`、`pii_tags`、`domains`、`session/request_id`，区分明文/加密与证书校验结果，标注 TLS Pinning 绕过状态。  
+- 合并逻辑：静态 findings + 动态 findings 去重（rule_id+location），动态来源标记 `detection_type=dynamic`，并集统计汇总保持 schema 一致（meta/findings/stats）。  
+- 错误与超时：无输出/超时/异常时返回非零或标注 `status=error`，日志包含错误原因，报告中不生成空 findings。  
+- 输出格式：定义共用 JSON schema（动态/静态共用字段+动态扩展），确保可与现有报告生成兼容。
 
 ## Chat Command Log
 

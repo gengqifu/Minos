@@ -59,6 +59,20 @@ def test_scan_cli_apk_mode(tmp_path: Path):
     assert not (out_dir / "scan.html").exists()
 
 
+def test_scan_cli_missing_apk_in_apk_mode(capsys):
+    exit_code = cli.main(["scan", "--mode", "apk", "--format", "json"])
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert "缺少 APK 输入" in captured.err
+
+
+def test_scan_cli_missing_src_in_source_mode(capsys):
+    exit_code = cli.main(["scan", "--mode", "source", "--format", "json"])
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert "缺少源码输入" in captured.err
+
+
 def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
     src_dir = tmp_path / "src"
     src_dir.mkdir()
@@ -121,3 +135,41 @@ def test_scan_cli_regions_regs_threads(tmp_path: Path):
     assert data["meta"]["regulations"] == ["gdpr"]
     assert data["meta"]["threads"] == 2
     assert data["meta"]["timeout"] == 30
+
+
+def test_scan_cli_multi_inputs_and_apks(tmp_path: Path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "Main.java").write_text("class Main {}")
+    src_dir2 = tmp_path / "src2"
+    src_dir2.mkdir()
+    (src_dir2 / "Main2.java").write_text("class Main2 {}")
+    apk1 = tmp_path / "a.apk"
+    apk2 = tmp_path / "b.apk"
+    apk1.write_bytes(b"dummy1")
+    apk2.write_bytes(b"dummy2")
+    out_dir = tmp_path / "out"
+
+    exit_code = cli.main(
+        [
+            "scan",
+            "--mode",
+            "both",
+            "--input",
+            str(src_dir),
+            "--input",
+            str(src_dir2),
+            "--apk-path",
+            str(apk1),
+            "--apk-path",
+            str(apk2),
+            "--output-dir",
+            str(out_dir),
+            "--format",
+            "json",
+        ]
+    )
+    assert exit_code == 0
+    data = json.loads((out_dir / "scan.json").read_text())
+    # four inputs merged
+    assert len(data["meta"]["inputs"]) == 4

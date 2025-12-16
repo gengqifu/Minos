@@ -71,3 +71,18 @@
 - 配置读取：JSON config 读写一致（regions/manual_add/manual_remove），非法配置报错。  
 - 无效输入：非法地区抛出明确错误；缺省输入需提示。  
 - 输出字段：包含 regions/regulations/source_flags/summary，供扫描器/报告使用。
+
+### 例行命令（Manifest 扫描示例）
+
+- 直接扫描 manifest 文件：
+  ```bash
+  PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'PERM_SENSITIVE_LOCATION','type':'permission','pattern':'android.permission.ACCESS_FINE_LOCATION','regulation':'PIPL','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('AndroidManifest.xml'), rules, {'PERM_SENSITIVE_LOCATION':'region'}))"
+  ```
+- 扫描目录（自动查找 AndroidManifest.xml，含 src/main）：
+  ```bash
+  PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'EXPORTED_ACTIVITY','type':'component','component':'activity','regulation':'GDPR','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('app'), rules, {'EXPORTED_ACTIVITY':'region'}))"
+  ```
+- 扫描 APK（读取包内 manifest，假设可解析 XML）：
+  ```bash
+  PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'EXPORTED_ACTIVITY','type':'component','component':'activity','regulation':'GDPR','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('app-release.apk'), rules, {'EXPORTED_ACTIVITY':'region'}))"
+  ```

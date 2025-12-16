@@ -7,9 +7,10 @@ IMG="${IMG:-minos:ci}"
 WORKDIR="${WORKDIR:-/work}"
 OUTDIR="${OUTDIR:-/work/output/reports}"
 SRC="${SRC:-tests}"
+DOCKERFILE="${DOCKERFILE:-containers/Dockerfile}"
 
-echo "[ci] build image ${IMG}"
-docker build -t "${IMG}" .
+echo "[ci] build image ${IMG} using ${DOCKERFILE}"
+docker build -f "${DOCKERFILE}" -t "${IMG}" .
 
 echo "[ci] run source-mode scan -> ${OUTDIR}"
 docker run --rm \

@@ -1,10 +1,13 @@
 # 容器运行说明（占位）
 
-示例命令：
+示例命令（请使用仓库内的 Dockerfile）：
 
 ```bash
-# 本地代码/产物挂载到 /work，规则缓存挂载到 /root/.minos/rules，输出到 /work/output
- docker run --rm \
+# 构建镜像（仓库路径下执行）
+docker build -f containers/Dockerfile -t minos:latest .
+
+# 运行：本地代码/产物挂载到 /work，规则缓存挂载到 /root/.minos/rules，输出到 /work/output
+docker run --rm \
   -v "$PWD":/work -w /work \
   -v "$HOME/.minos/rules":/root/.minos/rules \
   minos:latest \

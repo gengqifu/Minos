@@ -6,9 +6,10 @@ set -euo pipefail
 IMG="${IMG:-minos:test}"
 WORKDIR="${WORKDIR:-/work}"
 OUTDIR="${OUTDIR:-output/reports}"
+DOCKERFILE="${DOCKERFILE:-containers/Dockerfile}"
 
-echo "[smoke] build image ${IMG}"
-docker build -t "${IMG}" .
+echo "[smoke] build image ${IMG} using ${DOCKERFILE}"
+docker build -f "${DOCKERFILE}" -t "${IMG}" .
 
 echo "[smoke] run source-mode scan"
 docker run --rm \

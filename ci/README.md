@@ -14,6 +14,7 @@
 - **缓存与工件**：两套示例均支持规则缓存目录（GitHub 用 actions/cache，GitLab 用 cache），默认上传 `${MINOS_OUTPUT_DIR}/*.json|*.html` 与 `${MINOS_LOG_DIR}/*.log`。
 - **依赖与镜像**：需要 `requirements.txt` 与 `containers/Dockerfile`（若启用容器 job）；若不需要容器 job 可删除相关步骤。
 - **受限/离线**：提前在宿主机执行 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 准备规则缓存（可放置在制品库或预置在 Runner），CI 中通过挂载/缓存 `MINOS_RULE_CACHE` 目录复用，避免在线下载。
+- **日志与摘要**：CLI 默认 stdout 输出风险计数和报告路径（形如 `findings=0 ... reports=[...]`），适合作为流水线日志观测；同时通过 `--log-file "${MINOS_LOG_DIR}/..."` 生成可上传的文件日志以便调试。
 
 ## 本地验证
 

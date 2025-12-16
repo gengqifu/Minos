@@ -31,3 +31,8 @@
 输出目录挂载与权限：
 - 推荐挂载宿主目录到容器 `/work/output`（或自定义）以便保存报告/日志：`-v "$PWD/output":/work/output`。  
 - CLI `--output-dir` 默认为 `output/reports`（相对工作目录），保持与本地一致；确保宿主挂载目录可写。  
+
+镜像标签与推送（占位约定）：
+- 标签建议与仓库版本或 git tag 对齐，例如 `minos:<git-tag>`；开发测试可用 `minos:ci`/`minos:test`。  
+- 推送示例：`docker push <registry>/minos:<tag>`（或 OCI registry）；需要在 CI 中配置登录/凭据。  
+- 构建代理/源：通过 `--build-arg PIP_INDEX_URL=...` 等参数在受限网络构建。  

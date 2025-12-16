@@ -135,6 +135,7 @@
 ### CI 工作流示例
 
 - GitHub Actions：参考 `ci/github-actions/minos-scan.yml`，包含本地 Python 运行与容器运行两种作业，输出报告/日志工件。可复制到目标仓库的 `.github/workflows/` 并根据项目路径调整 `--input/--apk-path/--format`、输出目录、缓存参数等。
+- GitLab CI：参考 `ci/gitlab-ci/minos-scan.yml`，包含 `scan_local`（python:3.10-slim）与 `scan_container`（docker dind）两个 job，使用 `cache` 缓存规则目录 `${MINOS_RULE_CACHE}`，并通过 `artifacts` 收集 `${MINOS_OUTPUT_DIR}/*.json|*.html` 与 `${MINOS_LOG_DIR}/*.log`。可在 `.gitlab-ci.yml` include 或复制后按需删除不需要的 job。
 - 迁移提示：目标仓库需具备 `requirements.txt`、`containers/Dockerfile`（如使用容器作业）以及扫描输入路径（示例使用 `tests`、`ci/fixtures/dummy.apk`）；如不需要容器作业可删除对应 job。触发事件、地区/法规参数与 artifact 路径可按需修改。
 - 可调参数示例：通过 env 修改 `MINOS_INPUT_SRC`（源码目录）、`MINOS_APK_PATH`（APK 路径）、`MINOS_REGIONS`/`MINOS_REGULATIONS`（地区/法规）、`MINOS_OUTPUT_DIR`/`MINOS_LOG_DIR`（输出/日志目录）、`MINOS_LOG_LEVEL`、`MINOS_FORMAT_LOCAL`/`MINOS_FORMAT_CONTAINER`（报告格式）以及 `MINOS_RULE_CACHE`（规则缓存目录）。
 - 工件上传：workflow 已包含 `actions/upload-artifact`，分别上传本地作业与容器作业的 HTML/JSON 报告与日志（默认 artifact 名称为 `minos-scan-local`、`minos-scan-container`），路径与 env 中的输出目录保持一致。

@@ -3,6 +3,7 @@ Manifest 扫描：解析权限/导出组件，按规则匹配并生成 findings/
 """
 
 import xml.etree.ElementTree as ET
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -13,10 +14,38 @@ class ManifestScanError(Exception):
     """Manifest 扫描异常。"""
 
 
-def _parse_manifest(manifest_path: Path) -> ET.Element:
+def _load_manifest_content(manifest_input: Path) -> bytes:
+    """
+    支持三种输入：
+    - 直接传入 AndroidManifest.xml 文件
+    - 传入源码目录（寻找 AndroidManifest.xml）
+    - 传入 APK（读取压缩包内的 AndroidManifest.xml，假设为可解析 XML）
+    """
+    if manifest_input.is_dir():
+        manifest_path = manifest_input / "AndroidManifest.xml"
+        if not manifest_path.exists():
+            raise ManifestScanError("目录中未找到 AndroidManifest.xml")
+        return manifest_path.read_bytes()
+
+    if manifest_input.suffix.lower() == ".apk":
+        try:
+            with zipfile.ZipFile(manifest_input, "r") as zf:
+                content = zf.read("AndroidManifest.xml")
+                return content
+        except KeyError:
+            raise ManifestScanError("APK 中未找到 AndroidManifest.xml")
+        except Exception as exc:
+            raise ManifestScanError(f"读取 APK 失败: {exc}") from exc
+
+    if manifest_input.exists():
+        return manifest_input.read_bytes()
+
+    raise ManifestScanError(f"未找到 Manifest 输入: {manifest_input}")
+
+
+def _parse_manifest_content(content: bytes) -> ET.Element:
     try:
-        tree = ET.parse(manifest_path)
-        return tree.getroot()
+        return ET.fromstring(content)
     except Exception as exc:
         raise ManifestScanError(f"解析 Manifest 失败: {exc}") from exc
 
@@ -77,7 +106,8 @@ def scan_manifest(
     - 权限：{"rule_id": "...", "type": "permission", "pattern": "android.permission.ACCESS_FINE_LOCATION", "regulation": "...", "severity": "..."}
     - 组件：{"rule_id": "...", "type": "component", "component": "activity", "regulation": "...", "severity": "..."}
     """
-    root = _parse_manifest(manifest_path)
+    content = _load_manifest_content(manifest_path)
+    root = _parse_manifest_content(content)
     findings: List[Dict[str, Any]] = []
 
     for rule in rules:

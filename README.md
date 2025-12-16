@@ -72,6 +72,15 @@
 - 无效输入：非法地区抛出明确错误；缺省输入需提示。  
 - 输出字段：包含 regions/regulations/source_flags/summary，供扫描器/报告使用。
 
+### 验收用例（Manifest 扫描）
+
+- 敏感权限命中：包含 ACCESS_FINE_LOCATION 命中对应规则，source 透传。  
+- 导出组件命中：exported=true 的 activity/service/provider 未保护时命中，source 透传。  
+- 未命中：合规配置下 findings 为空，stats 为零。  
+- 规则缺失/非法规则：给出清晰错误或空结果，退出码/日志符合预期。  
+- 非法 manifest：解析失败抛出 ManifestScanError，退出码非零。  
+- stats：按 regulation/severity 汇总计数，与 findings 对应。
+
 ### 例行命令（Manifest 扫描示例）
 
 - 直接扫描 manifest 文件：

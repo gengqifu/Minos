@@ -95,3 +95,16 @@
   ```bash
   PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'EXPORTED_ACTIVITY','type':'component','component':'activity','regulation':'GDPR','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('app-release.apk'), rules, {'EXPORTED_ACTIVITY':'region'}))"
   ```
+
+### 容器运行（占位示例）
+
+- 入口脚本：`containers/entrypoint.sh`（默认调用 `python -m minos.cli`）。  
+- 运行示例：
+  ```bash
+  docker run --rm \
+    -v "$PWD":/work -w /work \
+    -v "$HOME/.minos/rules":/root/.minos/rules \
+    minos:latest \
+    minos scan --mode apk --apk-path app-release.apk --output-dir output/reports
+  ```
+- 受限/无网：提前在宿主机执行 rulesync 缓存规则，再挂载 `~/.minos/rules` 供容器使用。  

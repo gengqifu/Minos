@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minos"
+version = "0.1.0"
+description = "Android privacy compliance scanning CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+minos = "minos.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["minos"]

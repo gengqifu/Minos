@@ -30,7 +30,7 @@ Story Points: 2
 3. - [x] Manifest 解析与输入处理  
    - [x] 3.1 支持 APK 解包与源码路径直接读取 Manifest  
    - [x] 3.2 处理多变体/多 manifest 合并策略（至少支持主 Manifest）  
-4. - [ ] 规则匹配实现  
+4. - [x] 规则匹配实现  
    - [x] 4.1 权限规则匹配（必要性/敏感权限）  
    - [x] 4.2 导出组件规则匹配（activity/service/provider/exported 属性、权限保护）  
    - [x] 4.3 关联地区/法规来源标记（来自映射/手动）  

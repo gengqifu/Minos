@@ -143,6 +143,23 @@ def test_scan_cli_log_file(tmp_path: Path):
     assert "INFO" in content or "DEBUG" in content
 
 
+def test_scan_cli_exit_code_success(tmp_path: Path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "Main.java").write_text("class Main {}")
+    out_dir = tmp_path / "out"
+
+    exit_code = cli.main(
+        ["scan", "--mode", "source", "--input", str(src_dir), "--output-dir", str(out_dir), "--format", "json"]
+    )
+    assert exit_code == 0
+
+
+def test_scan_cli_exit_code_missing_input():
+    exit_code = cli.main(["scan", "--mode", "both"])
+    assert exit_code != 0
+
+
 def test_scan_cli_regions_regs_threads(tmp_path: Path):
     src_dir = tmp_path / "src"
     src_dir.mkdir()

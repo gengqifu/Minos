@@ -148,55 +148,60 @@ def _handle_scan(args: argparse.Namespace) -> int:
     needs_apk = args.mode in {"apk", "both"}
 
     logging.info("scan start mode=%s inputs=%s apks=%s manifests=%s", args.mode, inputs, apks, manifests)
-    if needs_src and not inputs and needs_apk and not apks:
-        sys.stderr.write("[scan] 缺少输入：请指定 --input 或 --apk-path\n")
-        logging.error("no inputs for mode=%s", args.mode)
-        return 2
-    if needs_src and not inputs:
-        sys.stderr.write("[scan] 缺少源码输入 (--input)\n")
-        logging.error("missing source inputs")
-        return 2
-    if needs_apk and not apks:
-        sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
-        logging.error("missing apk inputs")
-        return 2
+    try:
+        if needs_src and not inputs and needs_apk and not apks:
+            sys.stderr.write("[scan] 缺少输入：请指定 --input 或 --apk-path\n")
+            logging.error("no inputs for mode=%s", args.mode)
+            return 2
+        if needs_src and not inputs:
+            sys.stderr.write("[scan] 缺少源码输入 (--input)\n")
+            logging.error("missing source inputs")
+            return 2
+        if needs_apk and not apks:
+            sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
+            logging.error("missing apk inputs")
+            return 2
 
-    meta_inputs = inputs + apks + manifests
-    report = {
-        "meta": {
-            "inputs": meta_inputs,
-            "mode": args.mode,
-            "regions": args.regions or [],
-            "regulations": args.regulations or [],
-            "threads": args.threads,
-            "timeout": args.timeout,
-            "log_level": args.log_level,
-            "config": args.config,
-        },
-        "findings": [],
-        "stats": {"count_by_regulation": {}, "count_by_severity": {}},
-    }
-    _write_report(Path(args.output_dir), args.report_name, report, args.format)
-    report_paths = []
-    if args.format in {"both", "json"}:
-        report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.json"))
-    if args.format in {"both", "html"}:
-        report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.html"))
-    # stdout 摘要：风险计数（当前 demo 为 0）、报告路径、目标信息
-    logging.info(
-        "scan summary findings=%s by_reg=%s by_sev=%s reports=%s",
-        len(report.get("findings", [])),
-        report["stats"]["count_by_regulation"],
-        report["stats"]["count_by_severity"],
-        report_paths,
-    )
-    sys.stdout.write(
-        f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 "
-        f"by_regulation={report['stats']['count_by_regulation']} "
-        f"by_severity={report['stats']['count_by_severity']} "
-        f"reports={report_paths}\n"
-    )
-    return 0
+        meta_inputs = inputs + apks + manifests
+        report = {
+            "meta": {
+                "inputs": meta_inputs,
+                "mode": args.mode,
+                "regions": args.regions or [],
+                "regulations": args.regulations or [],
+                "threads": args.threads,
+                "timeout": args.timeout,
+                "log_level": args.log_level,
+                "config": args.config,
+            },
+            "findings": [],
+            "stats": {"count_by_regulation": {}, "count_by_severity": {}},
+        }
+        _write_report(Path(args.output_dir), args.report_name, report, args.format)
+        report_paths = []
+        if args.format in {"both", "json"}:
+            report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.json"))
+        if args.format in {"both", "html"}:
+            report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.html"))
+        # stdout 摘要：风险计数（当前 demo 为 0）、报告路径、目标信息
+        logging.info(
+            "scan summary findings=%s by_reg=%s by_sev=%s reports=%s",
+            len(report.get("findings", [])),
+            report["stats"]["count_by_regulation"],
+            report["stats"]["count_by_severity"],
+            report_paths,
+        )
+        sys.stdout.write(
+            f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 "
+            f"by_regulation={report['stats']['count_by_regulation']} "
+            f"by_severity={report['stats']['count_by_severity']} "
+            f"reports={report_paths}\n"
+        )
+        return 0
+    except Exception as exc:  # pragma: no cover - 广播异常路径
+        logging.exception("scan failed: %s", exc)
+        sys.stderr.write(f"[scan] 运行失败: {exc}\n")
+        return 1
 
 
 def _handle_rulesync(args: argparse.Namespace) -> int:

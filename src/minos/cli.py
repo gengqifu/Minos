@@ -151,8 +151,12 @@ def _handle_scan(args: argparse.Namespace) -> int:
         report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.json"))
     if args.format in {"both", "html"}:
         report_paths.append(str(Path(args.output_dir) / f"{args.report_name}.html"))
+    # stdout 摘要：风险计数（当前 demo 为 0）、报告路径、目标信息
     sys.stdout.write(
-        f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 reports={report_paths}\n"
+        f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 "
+        f"by_regulation={report['stats']['count_by_regulation']} "
+        f"by_severity={report['stats']['count_by_severity']} "
+        f"reports={report_paths}\n"
     )
     return 0
 

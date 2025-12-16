@@ -105,6 +105,8 @@ def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
     assert exit_code == 0
     assert "findings=0" in captured.out
     assert "reports=" in captured.out
+    assert "by_regulation" in captured.out
+    assert "by_severity" in captured.out
 
 
 def test_scan_cli_regions_regs_threads(tmp_path: Path):

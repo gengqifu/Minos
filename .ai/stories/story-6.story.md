@@ -31,8 +31,8 @@ Story Points: 3
    - [x] 3.1 规则缓存挂载约定（默认 /root/.minos/rules），无网时示例命令；确保写权限  
    - [x] 3.2 输出目录挂载与权限（/work/output/reports），与 CLI 保持一致  
 4. - [ ] 容器验收与 smoke 测试  
-   - [ ] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  
-   - [ ] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  
+   - [x] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  
+   - [x] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  
    - [ ] 4.3 （可选）CI 示例脚本：构建镜像 + 运行 smoke，生成工件  
 5. - [ ] 文档与发布  
    - [ ] 5.1 更新 README/containers/README：构建命令、运行示例、规则缓存挂载、受限网络提示、标签/发布约定  

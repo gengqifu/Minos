@@ -16,4 +16,15 @@ docker run --rm \
   "${IMG}" \
   minos scan --mode source --input tests --output-dir "${OUTDIR}" --format json --log-level info
 
+echo "[smoke] run apk-mode error case"
+if docker run --rm \
+  -v "$PWD":${WORKDIR} -w ${WORKDIR} \
+  "${IMG}" \
+  minos scan --mode apk --apk-path tests/fixtures/missing.apk --format json; then
+  echo "[smoke] apk-mode missing input should fail but succeeded" >&2
+  exit 1
+else
+  echo "[smoke] apk-mode missing input failed as expected"
+fi
+
 echo "[smoke] done. Reports should be under ${OUTDIR}."

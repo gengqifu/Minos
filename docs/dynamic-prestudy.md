@@ -16,6 +16,14 @@
 - 运行模式：同样建议独立 job，启动 mitmproxy + App 自动化流转（待后续实现）；超时无流量时返回非零或 status=error，日志记录“无流量”。  
 - 输出映射：将域名、PII 标签映射到 findings 字段，location=URL，evidence=匹配片段，detection_type=dynamic，保持与输出 schema 兼容。
 
+## PII/域名标签设计（5.2）
+
+- PII 标签：`pii_tags` 取值示例 `["email", "phone", "idfa", "imei", "android_id"]`，匹配证据写入 `evidence`，location 为 URL/接口。  
+- 域名标签：`domains` 字段列出命中的主机（如 `api.example.com`），可供后续域名清单汇总。  
+- 规则映射：每个标签对应规则 ID，如 `TRAFFIC_PII_EMAIL`、`TRAFFIC_IDFA_LEAK`，`regulation` 与静态规则保持一致，`severity` 按隐私敏感度设置。  
+- 输出示例：见 `dynamic/samples/dynamic_findings.json` 中 mitmproxy 条目，包含 `pii_tags` 与 `domains`，detection_type=dynamic。  
+- 错误处理：若无 PII/域名命中，仍可输出空 findings 或 status=error=“no traffic captured”；不得输出空字段导致 schema 破坏。
+
 ## TODO/风险
 
 - TLS Pinning 绕过、证书注入方案待与 mitmproxy 预研（见任务 5.x）。  

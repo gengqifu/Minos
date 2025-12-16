@@ -35,8 +35,8 @@ Story Points: 1
    - [x] 4.1 如何注入/启动 Frida server、脚本示例、常见反调试绕过思路（记录，不实现）  
    - [x] 4.2 Hook 重点：敏感 API 调用、标识收集、出网目标；输出映射到 findings 格式  
 5. - [ ] 预研 mitmproxy/流量捕获路径  
-   - [ ] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
-   - [ ] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
+   - [x] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
+   - [x] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
 6. - [ ] 合并与报告策略  
    - [ ] 6.1 动态 findings 与静态 findings 的合并规则（去重、优先级、来源标记=dynamic）  
    - [ ] 6.2 报告新增字段：检测类型（static/dynamic）、时间戳、会话 ID（可选）  
@@ -129,5 +129,7 @@ flowchart TD
 - Assistant: 在 docs/dynamic-prestudy.md 记录 Frida 启动/反调试绕过思路并勾选 4.1
 - User: 执行任务4.2  
 - Assistant: 补充 mitmproxy/流量预研输出映射并勾选 4.2  
+- User: 执行任务5.1  
+- Assistant: 记录代理/证书注入与 TLS Pinning 绕过思路并勾选 5.1
 - User: 标记任务4完成  
 - Assistant: 标记 Story-8 任务 4 完成

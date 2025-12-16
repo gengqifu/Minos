@@ -41,7 +41,7 @@ Story Points: 2
    - [x] 6.2 退出码约定：成功=0，参数/运行错误=非零；不设阻断策略，风险不导致失败  
 7. - [ ] 文档与验收  
    - [x] 7.1 README/使用说明：本地与容器示例命令，输出路径说明，受限网络提示  
-   - [ ] 7.2 验收用例：本地运行、容器运行、仅源码、仅 APK、同时提供、格式选择、缺少输入报错
+   - [x] 7.2 验收用例：本地运行、容器运行、仅源码、仅 APK、同时提供、格式选择、缺少输入报错
 
 ## Constraints
 
@@ -95,6 +95,15 @@ flowchart TD
 - stdout 摘要：包含风险计数（severity/regulation 维度或总数）、输出报告路径、输入数量/模式；容器与本地输出一致。  
 - 日志：错误/跳过原因明确（例如缺少输入/无法读取文件）；log-level 生效。  
 - 容器示例：命令形如 `docker run --rm -v $PWD:/work -w /work minos scan --mode apk --apk-path app.apk --output-dir out`，报告文件在挂载目录中生成，格式与本地相同。  
+
+## 验收用例
+
+- 本地运行仅源码：`minos scan --mode source --input app/src --format both`，退出码=0，生成 JSON/HTML，stdout 摘要含 by_reg/by_sev。  
+- 本地运行仅 APK：`minos scan --mode apk --apk-path app-release.apk --format json`，退出码=0，生成 JSON，stdout 摘要含报告路径。  
+- 同时提供源码+APK：`--mode both --input app/src --apk-path app-release.apk`，退出码=0，inputs 计数=2，报告存在。  
+- 缺少输入报错：不传 --input/--apk-path，或在 source/apk 模式下缺对应输入，退出码!=0，stderr 提示缺少输入。  
+- 格式选择：`--format html` 仅生成 HTML；`--format json` 仅生成 JSON；默认 both。  
+- 容器运行示例：`docker run --rm -v $PWD:/work -w /work -v ~/.minos/rules:/root/.minos/rules minos:latest minos scan --mode apk --apk-path app-release.apk --output-dir output/reports`，输出路径与本地一致，退出码=0。  
 
 ## Chat Command Log
 

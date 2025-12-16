@@ -30,6 +30,7 @@ def test_sensitive_permission_hits(tmp_path: Path):
     ]
     findings, stats = manifest_scanner.scan_manifest(manifest_path, rules, source_flags={"PERM_SENSITIVE_LOCATION": "region"})
     assert any(f["rule_id"] == "PERM_SENSITIVE_LOCATION" for f in findings)
+    assert any(f["source"] == "region" for f in findings if f["rule_id"] == "PERM_SENSITIVE_LOCATION")
     assert stats.get("count_by_regulation", {}).get("PIPL", 0) >= 1
 
 
@@ -47,6 +48,7 @@ def test_exported_component_hits(tmp_path: Path):
     ]
     findings, stats = manifest_scanner.scan_manifest(manifest_path, rules, source_flags={"EXPORTED_ACTIVITY": "region"})
     assert any(f["rule_id"] == "EXPORTED_ACTIVITY" for f in findings)
+    assert any(f["source"] == "region" for f in findings if f["rule_id"] == "EXPORTED_ACTIVITY")
     assert stats.get("count_by_regulation", {}).get("GDPR", 0) >= 1
 
 

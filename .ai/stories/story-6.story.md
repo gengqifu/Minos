@@ -1,80 +1,75 @@
-# Epic-4 - Story-3
-# CI 工作流示例与工件集成
+# Epic-4 - Story-2
+# 容器化交付与发布
 
 **As a** CI/DevOps 用户  
-**I want** 提供可直接复用的 CI 工作流示例（GitHub Actions/GitLab CI），产出 HTML/JSON 报告和日志工件  
-**so that** 团队能快速在 CI 中落地隐私合规扫描并获取结果
+**I want** 提供可直接使用的 Docker/OCI 镜像并有验证脚本  
+**so that** CI/CD 与本地能统一运行扫描并复用规则缓存
 
 ## Status
 
-Approved
+Draft
 
 ## Context
 
-- Epic-4 聚焦 CI 集成与报告输出。本故事交付可复用的 CI 配置与工件收集示例。  
-- 依赖：规则同步（Epic-1）、地区/法规映射（Epic-2）、扫描能力（Epic-3）、CLI/容器入口（Epic-4 Story-1）。  
-- PRD 约束：报告 HTML+JSON、stdout 摘要，支持本地/容器运行，无阻断策略。
+- 延续 Epic-4（CI 集成与报告输出），在 Story-1 已实现 CLI/报告基础能力。  
+- 目前仅有容器入口占位和文档示例，缺少可用镜像（Dockerfile）、依赖安装、构建/推送流程与容器内验收。  
+- 目标：本地与 CI 均可通过官方镜像运行扫描（含规则缓存挂载），输出 HTML+JSON 报告与 stdout 摘要。
 
 ## Estimation
 
-Story Points: 1
+Story Points: 3
 
 ## Tasks
 
-1. - [ ] 设计测试用例（TDD 先行）  
-   - [ ] 1.1 覆盖：GitHub Actions 工作流、GitLab CI 工作流；产出 HTML/JSON 报告、日志工件；多输入场景（源码/APK）；缺少输入时报错  
-   - [ ] 1.2 断言：步骤成功执行、工件存在且符合命名/路径约定、stdout 摘要包含风险计数/报告路径  
-2. - [ ] 实现测试用例（自动化/可执行示例）  
-   - [ ] 2.1 编写/配置可运行的 CI 示例测试（本地 runner/容器模拟）验证工件产出与摘要  
-   - [ ] 2.2 校验退出码、工件路径、报告/schema、缺少输入报错  
-3. - [ ] GitHub Actions 示例  
-   - [ ] 3.1 使用官方容器镜像/本地运行方式（可选）  
-   - [ ] 3.2 参数示例：地区/法规、输入路径、输出目录、log-level；缓存规则目录（可选）  
-   - [ ] 3.3 上传工件：HTML/JSON 报告、日志文件  
-4. - [ ] GitLab CI 示例  
-   - [ ] 4.1 stage/job 配置，镜像或本地运行方式  
-   - [ ] 4.2 参数示例与缓存/工件收集配置  
-5. - [ ] 输出与文档  
-   - [ ] 5.1 在仓库提供 `ci/` 下的示例 YAML/脚本，附运行说明  
-   - [ ] 5.2 说明如何在受限网络/离线模式下使用本地规则缓存  
-6. - [ ] 日志与可观测性  
-   - [ ] 6.1 确保 stdout 摘要清晰；文件日志可作为工件上传  
-   - [ ] 6.2 退出码约定：配置/运行错误为非零；风险不阻断（无阻断策略）
+1. - [ ] 设计与实现测试（TDD 先行）  
+   - [ ] 1.1 设计容器化验收：构建镜像、运行 smoke（source 模式、apk 模式）、报告生成与摘要校验、无网缓存挂载场景  
+   - [ ] 1.2 实现自动化测试/脚本（或 CI 示例）验证镜像可用性与退出码  
+2. - [ ] Docker/OCI 镜像构建  
+   - [ ] 2.1 Dockerfile：基础镜像（python 3.10+，含 unzip/zip，必要时 openjdk 17）、安装依赖、复制源码、设置工作目录/ENTRYPOINT  
+   - [ ] 2.2 支持构建参数（PIP_INDEX_URL/HTTP_PROXY 等），预置规则缓存目录（空），ENTRYPOINT 使用 containers/entrypoint.sh  
+3. - [ ] 容器运行与缓存策略  
+   - [ ] 3.1 规则缓存挂载约定（默认 /root/.minos/rules），无网时示例命令；确保写权限  
+   - [ ] 3.2 输出目录挂载与权限（/work/output/reports），与 CLI 保持一致  
+4. - [ ] 容器验收与 smoke 测试  
+   - [ ] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  
+   - [ ] 4.2 在容器内运行 apk 模式的占位 smoke，验证缺少输入时返回非零、错误提示清晰  
+   - [ ] 4.3 （可选）CI 示例脚本：构建镜像 + 运行 smoke，生成工件  
+5. - [ ] 文档与发布  
+   - [ ] 5.1 更新 README/containers/README：构建命令、运行示例、规则缓存挂载、受限网络提示、标签/发布约定  
+   - [ ] 5.2 标注镜像标签策略（如与 git tag 同步），占位推送命令（docker push/oci），列出依赖/体积注意事项  
 
 ## Constraints
 
-- 不上传业务数据；兼容无网/受限环境（使用本地规则缓存）。  
-- 报告/日志字段需符合 PRD/架构定义；与 CLI 行为一致。  
-- 工作流示例不强制阻断，以报告为主。
-
-## Data Models / Schema
-
-- 工件结构示例：`output/report.html`、`output/report.json`、`output/logs/scan.log`。
+- 兼容无网/受限网络：规则缓存需可挂载；镜像不强依赖外部拉取。  
+- 保持与现有 CLI/报告格式一致；不上传扫描数据。  
+- 容器执行需在非特权环境可运行，尽量避免 root-only 操作。
 
 ## Structure
 
-- `ci/github-actions/`：GitHub Actions 示例 workflow  
-- `ci/gitlab-ci/`：GitLab CI 示例 job  
-- `scripts/`（可选）：封装运行命令的脚本
+- `containers/Dockerfile`：镜像构建脚本  
+- `containers/entrypoint.sh`：入口（已有，占位），需在 Dockerfile 中引用  
+- `containers/README.md`：容器使用/构建说明  
+- `scripts/`（可选）：容器 smoke/CI 示例
 
 ## Diagrams
 
 ```mermaid
 flowchart TD
-    CI["CI 工作流 (GitHub/GitLab)"] --> SETUP["拉取代码/规则缓存"]
-    SETUP --> RUN["运行 CLI/容器扫描"]
-    RUN --> REPORT["生成 HTML/JSON 报告"]
-    RUN --> LOGS["日志输出 (stdout+file)"]
-    REPORT --> ARTIFACTS["上传工件 (报告/日志)"]
+    BUILD["Docker build (Dockerfile)"] --> IMG["minos:tag"]
+    RULES["宿主规则缓存 (~/.minos/rules)"] -->|挂载| IMG
+    SRC["源码/APK 输出目录"] -->|挂载| IMG
+    IMG --> RUN["容器内执行 minos scan"]
+    RUN --> REPORT["输出 HTML/JSON"]
+    RUN --> SUMMARY["stdout 摘要"]
 ```
 
 ## Dev Notes
 
-- 提供最小可运行示例，路径/命名与 CLI 参数保持一致。  
-- 受限网络提示：使用本地规则缓存，禁用在线 rulesync 或改用预下载。  
-- TDD：先写工作流/脚本级别的验证（例如通过本地 runner/容器模拟）再交付示例。
+- 基础镜像推荐 slim 以减小体积；若需要 JDK 可选择带 JRE 的变体或安装 openjdk-17-jre-headless。  
+- 统一工作目录 /work，ENTRYPOINT 调用 `python -m minos.cli`，允许覆盖 CMD。  
+- Smoke 测试可使用现有示例源码/假 APK，关注退出码与报告路径。  
+- TDD：先写容器 smoke 测试/脚本，再补 Dockerfile 与文档。
 
 ## Chat Command Log
 
-- User: 生成下一个 story  
-- Assistant: 起草 Epic-4 Story-2（CI 工作流示例与工件集成）草稿
+- User: 新建 story 用来实现容器化交付，并更新相关文档。参考模板，遵循 TDD。  

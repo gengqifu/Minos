@@ -3,6 +3,7 @@ Minos CLI 入口（rulesync 子命令）。
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -54,6 +55,81 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.set_defaults(handler=_handle_rulesync)
 
 
+def _add_scan_parser(subparsers: argparse._SubParsersAction) -> None:
+    parser = subparsers.add_parser("scan", help="执行扫描（占位实现）")
+    parser.add_argument("--mode", choices=["source", "apk", "both"], default="both", help="扫描模式")
+    parser.add_argument("--input", dest="inputs", action="append", help="源码目录（可多次传入）")
+    parser.add_argument("--apk-path", dest="apks", action="append", help="APK 路径（可多次传入）")
+    parser.add_argument("--format", choices=["html", "json", "both"], default="both", help="报告格式")
+    parser.add_argument("--output-dir", dest="output_dir", default="output/reports", help="报告输出目录")
+    parser.add_argument("--report-name", dest="report_name", default="scan", help="报告文件前缀")
+    parser.set_defaults(handler=_handle_scan)
+
+
+def _write_report(output_dir: Path, report_name: str, data: dict, fmt: str) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if fmt in {"both", "json"}:
+        (output_dir / f"{report_name}.json").write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    if fmt in {"both", "html"}:
+        rows = "\n".join(
+            [
+                "<tr>"
+                f"<td>{f.get('rule_id','')}</td>"
+                f"<td>{f.get('regulation','')}</td>"
+                f"<td>{f.get('severity','')}</td>"
+                f"<td>{f.get('location','')}</td>"
+                f"<td>{f.get('evidence','')}</td>"
+                "</tr>"
+                for f in data.get("findings", [])
+            ]
+        )
+        html = f"""<!DOCTYPE html>
+<html><body>
+<h3>Minos Scan Report</h3>
+<p>Inputs: {', '.join(data['meta']['inputs'])}</p>
+<p>Findings: {len(data.get('findings', []))}</p>
+<table border="1" cellpadding="4" cellspacing="0">
+<thead><tr><th>rule_id</th><th>regulation</th><th>severity</th><th>location</th><th>evidence</th></tr></thead>
+<tbody>{rows}</tbody>
+</table>
+</body></html>
+"""
+        (output_dir / f"{report_name}.html").write_text(html)
+
+
+def _handle_scan(args: argparse.Namespace) -> int:
+    inputs = args.inputs or []
+    apks = args.apks or []
+    needs_src = args.mode in {"source", "both"}
+    needs_apk = args.mode in {"apk", "both"}
+
+    if needs_src and not inputs and needs_apk and not apks:
+        sys.stderr.write("[scan] 缺少输入：请指定 --input 或 --apk-path\n")
+        return 2
+    if needs_src and not inputs:
+        sys.stderr.write("[scan] 缺少源码输入 (--input)\n")
+        return 2
+    if needs_apk and not apks:
+        sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
+        return 2
+
+    meta_inputs = inputs + apks
+    report = {
+        "meta": {
+            "inputs": meta_inputs,
+            "mode": args.mode,
+        },
+        "findings": [],
+        "stats": {"count_by_regulation": {}, "count_by_severity": {}},
+    }
+    _write_report(Path(args.output_dir), args.report_name, report, args.format)
+    sys.stdout.write(
+        f"[scan] mode={args.mode} inputs={len(meta_inputs)} findings=0 "
+        f"report={Path(args.output_dir)/ (args.report_name + ('.json' if args.format!='html' else '.html'))}\n"
+    )
+    return 0
+
+
 def _handle_rulesync(args: argparse.Namespace) -> int:
     cache_dir = Path(args.cache_dir).expanduser()
     retries = max(args.retries, 0)
@@ -100,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="minos", description="Minos CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
     _add_rulesync_parser(subparsers)
+    _add_scan_parser(subparsers)
     args = parser.parse_args(argv)
     handler = getattr(args, "handler", None)
     if handler is None:

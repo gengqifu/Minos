@@ -1,35 +1,83 @@
-import pytest
+from pathlib import Path
 
 from minos import cli
 
 
-@pytest.mark.xfail(raises=SystemExit, strict=True, reason="scan CLI not implemented yet")
-def test_scan_cli_requires_input():
-    cli.main(["scan"])
+def test_scan_cli_requires_input(capsys):
+    exit_code = cli.main(["scan"])
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert "缺少输入" in captured.err
 
 
-@pytest.mark.xfail(raises=SystemExit, strict=True, reason="scan CLI not implemented yet")
-def test_scan_cli_source_mode_and_format():
-    cli.main(["scan", "--mode", "source", "--format", "both", "--output-dir", "out", "--input", "app/src"])
+def test_scan_cli_source_mode_and_format(tmp_path: Path):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "Main.java").write_text("class Main {}")
+    out_dir = tmp_path / "out"
+
+    exit_code = cli.main(
+        [
+            "scan",
+            "--mode",
+            "source",
+            "--format",
+            "both",
+            "--output-dir",
+            str(out_dir),
+            "--input",
+            str(src_dir),
+        ]
+    )
+    assert exit_code == 0
+    assert (out_dir / "scan.json").exists()
+    assert (out_dir / "scan.html").exists()
 
 
-@pytest.mark.xfail(raises=SystemExit, strict=True, reason="scan CLI not implemented yet")
-def test_scan_cli_apk_mode():
-    cli.main(["scan", "--mode", "apk", "--apk-path", "app-release.apk", "--format", "json"])
+def test_scan_cli_apk_mode(tmp_path: Path):
+    apk = tmp_path / "app-release.apk"
+    apk.write_bytes(b"dummy apk content")
+    out_dir = tmp_path / "out"
+
+    exit_code = cli.main(
+        [
+            "scan",
+            "--mode",
+            "apk",
+            "--apk-path",
+            str(apk),
+            "--format",
+            "json",
+            "--output-dir",
+            str(out_dir),
+        ]
+    )
+    assert exit_code == 0
+    assert (out_dir / "scan.json").exists()
+    # html 不生成
+    assert not (out_dir / "scan.html").exists()
 
 
-@pytest.mark.xfail(raises=SystemExit, strict=True, reason="scan CLI not implemented yet")
-def test_scan_cli_stdout_summary():
-    cli.main(
+def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
+    src_dir = tmp_path / "src"
+    src_dir.mkdir()
+    (src_dir / "Main.java").write_text("class Main {}")
+    out_dir = tmp_path / "out"
+
+    exit_code = cli.main(
         [
             "scan",
             "--mode",
             "both",
             "--apk-path",
-            "app-release.apk",
+            str(src_dir / "dummy.apk"),
             "--input",
-            "app/src",
+            str(src_dir),
             "--output-dir",
-            "out",
+            str(out_dir),
         ]
     )
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert "findings=0" in captured.out
+    assert "report" in captured.out

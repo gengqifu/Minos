@@ -1,0 +1,98 @@
+name: Minos CI Scan Example
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  MINOS_OUTPUT_DIR: output/reports
+  MINOS_LOG_DIR: output/logs
+  MINOS_RULE_CACHE: ~/.minos/rules
+
+jobs:
+  scan-local:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Cache rule directory (optional)
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MINOS_RULE_CACHE }}
+          key: minos-rules-${{ hashFiles('rules/**') }}
+          restore-keys: |
+            minos-rules-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Minos scan (source mode)
+        run: |
+          mkdir -p "${MINOS_OUTPUT_DIR}" "${MINOS_LOG_DIR}"
+          python -m minos.cli scan \
+            --mode source \
+            --input tests \
+            --regions eu \
+            --regulations gdpr \
+            --output-dir "${MINOS_OUTPUT_DIR}" \
+            --format both \
+            --log-file "${MINOS_LOG_DIR}/scan.log" \
+            --log-level info
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: minos-scan-local
+          path: |
+            ${{ env.MINOS_OUTPUT_DIR }}/*.json
+            ${{ env.MINOS_OUTPUT_DIR }}/*.html
+            ${{ env.MINOS_LOG_DIR }}/*.log
+          if-no-files-found: error
+
+  scan-container:
+    runs-on: ubuntu-latest
+    needs: scan-local
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build container image
+        run: docker build -f containers/Dockerfile -t minos:ci .
+
+      - name: Run scan via container
+        run: |
+          mkdir -p "${MINOS_OUTPUT_DIR}" "${MINOS_LOG_DIR}"
+          docker run --rm \
+            -v "${{ github.workspace }}":/work \
+            -w /work \
+            -e MINOS_RULE_CACHE="${MINOS_RULE_CACHE}" \
+            minos:ci \
+            minos scan \
+              --mode both \
+              --input tests \
+              --apk-path ci/fixtures/dummy.apk \
+              --regions eu \
+              --regulations gdpr \
+              --output-dir "${MINOS_OUTPUT_DIR}" \
+              --format json \
+              --log-file "${MINOS_LOG_DIR}/scan-container.log" \
+              --log-level info
+
+      - name: Upload artifacts (container)
+        uses: actions/upload-artifact@v4
+        with:
+          name: minos-scan-container
+          path: |
+            ${{ env.MINOS_OUTPUT_DIR }}/*.json
+            ${{ env.MINOS_OUTPUT_DIR }}/*.html
+            ${{ env.MINOS_LOG_DIR }}/*.log
+          if-no-files-found: error

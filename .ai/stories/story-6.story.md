@@ -22,8 +22,8 @@ Story Points: 3
 ## Tasks
 
 1. - [ ] 设计与实现测试（TDD 先行）  
-   - [ ] 1.1 设计容器化验收：构建镜像、运行 smoke（source 模式、apk 模式）、报告生成与摘要校验、无网缓存挂载场景  
-   - [ ] 1.2 实现自动化测试/脚本（或 CI 示例）验证镜像可用性与退出码  
+   - [x] 1.1 设计容器化验收：构建镜像、运行 smoke（source 模式、apk 模式）、报告生成与摘要校验、无网缓存挂载场景  
+   - [x] 1.2 实现自动化测试/脚本（或 CI 示例）验证镜像可用性与退出码  
 2. - [ ] Docker/OCI 镜像构建  
    - [ ] 2.1 Dockerfile：基础镜像（python 3.10+，含 unzip/zip，必要时 openjdk 17）、安装依赖、复制源码、设置工作目录/ENTRYPOINT  
    - [ ] 2.2 支持构建参数（PIP_INDEX_URL/HTTP_PROXY 等），预置规则缓存目录（空），ENTRYPOINT 使用 containers/entrypoint.sh  
@@ -69,6 +69,15 @@ flowchart TD
 - 统一工作目录 /work，ENTRYPOINT 调用 `python -m minos.cli`，允许覆盖 CMD。  
 - Smoke 测试可使用现有示例源码/假 APK，关注退出码与报告路径。  
 - TDD：先写容器 smoke 测试/脚本，再补 Dockerfile 与文档。
+- 已添加 `scripts/container_smoke.sh`：构建镜像并运行一次源码模式扫描，生成 JSON 报告，验证退出码。
+
+## 验收设计（1.1）
+
+- 构建镜像：`docker build -t minos:test .`（可接受 ARG 覆盖代理源）。  
+- Smoke-源码模式：`docker run --rm -v $PWD:/work -w /work minos:test minos scan --mode source --input tests --output-dir output/reports --format json`，期望退出码=0、生成 JSON 报告、stdout 摘要含 by_reg/by_sev。  
+- Smoke-APK 模式（占位）：`docker run --rm -v $PWD:/work -w /work minos:test minos scan --mode apk --apk-path tests/fixtures/dummy.apk --format json`，缺少文件时应非零退出且 stderr 给出缺少输入提示。  
+- 无网缓存挂载：`-v ~/.minos/rules:/root/.minos/rules` 挂载后依旧可运行 smoke（不校验网络访问）。  
+- 输出路径一致性：容器与本地均在 /work/output/reports 下生成报告；日志（如指定 --log-file）可写入挂载目录。  
 
 ## Chat Command Log
 

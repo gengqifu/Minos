@@ -41,6 +41,31 @@ assert_contains() {
   fi
 }
 
+assert_json_schema() {
+  local file="$1"
+  local expect_mode="$2"
+  local expect_inputs="$3"
+  "${PYTHON_BIN}" - <<PY
+import json, sys
+path = "${file}"
+data = json.load(open(path, "r"))
+required_keys = {"meta", "findings", "stats"}
+assert set(data.keys()) == required_keys, f"keys mismatch: {set(data.keys())}"
+meta = data["meta"]
+assert meta.get("mode") == "${expect_mode}", meta
+assert len(meta.get("inputs", [])) == ${expect_inputs}, meta.get("inputs")
+stats = data["stats"]
+assert "count_by_regulation" in stats and "count_by_severity" in stats, stats
+print("[ci-test] json schema ok", path)
+PY
+}
+
+assert_html_basic() {
+  local file="$1"
+  assert_contains "Minos Scan Report" "${file}"
+  assert_contains "Stats by regulation" "${file}"
+}
+
 run_github_like() {
   local stdout_file="${ARTIFACT_ROOT}/github_stdout.log"
   rm -rf "${ARTIFACT_ROOT}"
@@ -61,6 +86,8 @@ run_github_like() {
   assert_file "${LOG_FILE}"
   assert_contains "findings=0" "${stdout_file}"
   assert_contains "reports=" "${stdout_file}"
+  assert_json_schema "${REPORT_DIR}/gha-report.json" "source" 1
+  assert_html_basic "${REPORT_DIR}/gha-report.html"
 }
 
 run_gitlab_like() {
@@ -84,6 +111,7 @@ run_gitlab_like() {
   assert_file "${LOG_FILE}"
   assert_contains "findings=0" "${stdout_file}"
   assert_contains "reports=" "${stdout_file}"
+  assert_json_schema "${REPORT_DIR}/gitlab-report.json" "both" 2
 }
 
 run_missing_input_case() {
@@ -106,6 +134,10 @@ run_missing_input_case() {
     exit 1
   fi
   assert_contains "缺少 APK 输入" "${stderr_file}"
+  if ls "${REPORT_DIR}"/* >/dev/null 2>&1; then
+    echo "[ci-test] 不应生成报告文件"
+    exit 1
+  fi
 }
 
 run_github_like

@@ -26,7 +26,7 @@ Story Points: 1
    - [x] 1.2 断言：步骤成功执行、工件存在且符合命名/路径约定、stdout 摘要包含风险计数/报告路径  
 2. - [ ] 实现测试用例（自动化/可执行示例）  
    - [x] 2.1 编写/配置可运行的 CI 示例测试（本地 runner/容器模拟）验证工件产出与摘要  
-   - [ ] 2.2 校验退出码、工件路径、报告/schema、缺少输入报错  
+   - [x] 2.2 校验退出码、工件路径、报告/schema、缺少输入报错  
 3. - [ ] GitHub Actions 示例  
    - [ ] 3.1 使用官方容器镜像/本地运行方式（可选）  
    - [ ] 3.2 参数示例：地区/法规、输入路径、输出目录、log-level；缓存规则目录（可选）  
@@ -105,3 +105,5 @@ flowchart TD
 - Assistant: 标记 Story-3 任务 1 完成
 - User: 执行任务2.1  
 - Assistant: 添加 CI 工作流本地验收脚本并勾选 2.1
+- User: [story-7.story.md](.ai/stories/story-7.story.md) 执行任务2.2  
+- Assistant: 增强 CI 验收脚本校验 schema/路径/退出码并勾选 2.2

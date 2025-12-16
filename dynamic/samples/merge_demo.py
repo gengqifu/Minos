@@ -6,12 +6,13 @@
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
-STATIC_PATH = ROOT / "static_findings.json"
-DYNAMIC_PATH = ROOT / "dynamic_findings.json"
+STATIC_PATH = Path(os.getenv("STATIC_PATH", ROOT / "static_findings.json"))
+DYNAMIC_PATH = Path(os.getenv("DYNAMIC_PATH", ROOT / "dynamic_findings.json"))
 
 
 def load_json(path: Path) -> dict:

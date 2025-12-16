@@ -75,6 +75,15 @@ def test_scan_cli_missing_apk_in_apk_mode(capsys):
     assert "缺少 APK 输入" in captured.err
 
 
+def test_scan_cli_missing_apk_file(capsys):
+    exit_code = cli.main(
+        ["scan", "--mode", "apk", "--apk-path", "tests/fixtures/missing.apk", "--format", "json"]
+    )
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert "APK 不存在" in captured.err
+
+
 def test_scan_cli_missing_src_in_source_mode(capsys):
     exit_code = cli.main(["scan", "--mode", "source", "--format", "json"])
     captured = capsys.readouterr()
@@ -87,6 +96,8 @@ def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
     src_dir.mkdir()
     (src_dir / "Main.java").write_text("class Main {}")
     out_dir = tmp_path / "out"
+    dummy_apk = src_dir / "dummy.apk"
+    dummy_apk.write_bytes(b"apk")
 
     exit_code = cli.main(
         [
@@ -94,7 +105,7 @@ def test_scan_cli_stdout_summary(tmp_path: Path, capsys):
             "--mode",
             "both",
             "--apk-path",
-            str(src_dir / "dummy.apk"),
+            str(dummy_apk),
             "--input",
             str(src_dir),
             "--output-dir",

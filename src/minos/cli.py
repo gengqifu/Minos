@@ -161,6 +161,11 @@ def _handle_scan(args: argparse.Namespace) -> int:
             sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
             logging.error("missing apk inputs")
             return 2
+        for apk in apks:
+            if not Path(apk).exists():
+                sys.stderr.write(f"[scan] APK 不存在: {apk}\n")
+                logging.error("apk path not found: %s", apk)
+                return 2
 
         meta_inputs = inputs + apks + manifests
         report = {

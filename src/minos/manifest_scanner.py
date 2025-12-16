@@ -161,4 +161,10 @@ def scan_manifest(
         if sev:
             stats["count_by_severity"][sev] = stats["count_by_severity"].get(sev, 0) + 1
 
+    # stdout 摘要
+    print(
+        f"[manifest] scanned {manifest_path}, findings={len(findings)}, "
+        f"by_regulation={stats['count_by_regulation']}, by_severity={stats['count_by_severity']}"
+    )
+
     return findings, stats

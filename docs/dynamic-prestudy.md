@@ -24,6 +24,23 @@
 - 输出示例：见 `dynamic/samples/dynamic_findings.json` 中 mitmproxy 条目，包含 `pii_tags` 与 `domains`，detection_type=dynamic。  
 - 错误处理：若无 PII/域名命中，仍可输出空 findings 或 status=error=“no traffic captured”；不得输出空字段导致 schema 破坏。
 
+## 合并与报告策略（6.1）
+
+- 去重键：`rule_id + location + source`，动态/静态并集后去重；动态条目标记 `detection_type=dynamic`，静态为 `static`。  
+- 统计：stats 扩展 `count_by_source`（static/frida/mitmproxy…），保持 meta/findings/stats 三段结构与现有报告兼容。  
+- 优先级：同一 rule/location 下动态优先于静态展示（保留动态），但不影响总体计数；可在报告中标记 “dynamic_override=true”。  
+- 失败策略：合并失败或动态数据缺失时仍输出静态结果，返回码=0；但若输入/解析错误则返回非零并记录 `status=error` 与错误原因。  
+- 摘要输出：stdout 摘要应包含 `findings_dynamic`、`findings_static` 计数与报告路径，便于 CI 观察。
+
+## 报告字段扩展（6.2）
+
+- detection_type：`static|dynamic`，标注来源类型，默认静态。  
+- timestamp：动态条目需要时间戳，静态可选。  
+- session：动态条目需会话 ID；静态可省略。  
+- request_id（可选）：流量场景用于定位请求。  
+- dynamic_override（可选）：当动态覆盖同一 rule/location 静态条目时标记为 true。  
+- 兼容性：保持 meta/findings/stats 三段结构，HTML/JSON 报告共用同一字段集；未使用的扩展字段可为空或缺省，不影响解析。
+
 ## TODO/风险
 
 - TLS Pinning 绕过、证书注入方案待与 mitmproxy 预研（见任务 5.x）。  

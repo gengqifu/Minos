@@ -37,9 +37,9 @@ Story Points: 1
 5. - [x] 预研 mitmproxy/流量捕获路径  
    - [x] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
    - [x] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
-6. - [ ] 合并与报告策略  
-   - [ ] 6.1 动态 findings 与静态 findings 的合并规则（去重、优先级、来源标记=dynamic）  
-   - [ ] 6.2 报告新增字段：检测类型（static/dynamic）、时间戳、会话 ID（可选）  
+6. - [x] 合并与报告策略  
+   - [x] 6.1 动态 findings 与静态 findings 的合并规则（去重、优先级、来源标记=dynamic）  
+   - [x] 6.2 报告新增字段：检测类型（static/dynamic）、时间戳、会话 ID（可选）  
 7. - [ ] 文档与验收  
    - [ ] 7.1 预研结论文档：接口定义、样例输出、限制与风险（反调试、证书校验、自动化成本）  
    - [ ] 7.2 验收：接口 schema 评审通过，样例输出与合并策略明确
@@ -133,3 +133,7 @@ flowchart TD
 - Assistant: 记录代理/证书注入与 TLS Pinning 绕过思路并勾选 5.1
 - User: 标记任务4完成  
 - Assistant: 标记 Story-8 任务 4 完成
+- User: 执行任务6.1  
+- Assistant: 记录动态/静态合并策略并勾选 6.1
+- User: 执行任务6.2  
+- Assistant: 补充报告字段扩展（detection_type/timestamp/session）并勾选 6.2

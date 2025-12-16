@@ -25,7 +25,7 @@ Story Points: 2
    - [x] 1.1 覆盖：CLI 参数解析、模式选择（source/apk/both）、输出格式 (html/json/both)、stdout 摘要内容、报告文件生成与字段校验、容器内运行示例  
    - [x] 1.2 断言：退出码、报告文件存在且符合 schema、日志摘要包含风险计数与路径、无阻断策略下不强制失败  
 2. - [ ] 实现测试用例（自动化）  
-   - [ ] 2.1 编写 CLI/报告/容器入口的测试，覆盖参数、输出、摘要、错误场景  
+   - [x] 2.1 编写 CLI/报告/容器入口的测试，覆盖参数、输出、摘要、错误场景  
    - [ ] 2.2 支持本地与 CI 运行，验证报告 schema、退出码与日志  
 3. - [ ] CLI 实现与参数解析  
    - [ ] 3.1 支持 --regions/--regulations/--mode/--output-dir/--format/--timeout/--threads/--log-level/--manifest/--apk-path/--config 等  

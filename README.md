@@ -129,3 +129,5 @@
     --format json
   ```
 - 行为与容器运行一致：报告路径/格式、stdout 摘要字段相同；缺少输入时返回非零并提示。
+- 输出路径：默认写入 `output/reports/{scan.json,scan.html}`（可通过 `--output-dir`/`--report-name` 覆盖）；日志可选 `--log-file`（支持轮转）。
+- 受限网络提示：提前执行 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 缓存规则，再在离线环境使用。

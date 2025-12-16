@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Dynamic Finding",
+  "type": "object",
+  "required": ["type", "source", "rule_id", "regulation", "severity", "location", "evidence"],
+  "properties": {
+    "type": { "type": "string", "enum": ["dynamic"] },
+    "source": { "type": "string", "description": "frida|mitmproxy|pcap 等" },
+    "rule_id": { "type": "string" },
+    "regulation": { "type": "string" },
+    "severity": { "type": "string" },
+    "location": { "type": "string" },
+    "evidence": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "session": { "type": "string" },
+    "pii_tags": { "type": "array", "items": { "type": "string" } },
+    "domains": { "type": "array", "items": { "type": "string" } },
+    "detection_type": { "type": "string", "enum": ["dynamic"], "description": "合并后标记" },
+    "status": { "type": "string", "enum": ["ok", "error"], "default": "ok" },
+    "error": { "type": "string", "description": "当 status=error 时的错误原因" }
+  }
+}

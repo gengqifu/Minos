@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Dynamic Plugin Input",
+  "type": "object",
+  "required": ["targets"],
+  "properties": {
+    "targets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "待检测目标（APK 路径、包名或域名等）"
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "动态检测超时"
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "插件特定配置，如 hook 列表、代理端口等"
+    },
+    "session": { "type": "string", "description": "会话 ID" }
+  }
+}

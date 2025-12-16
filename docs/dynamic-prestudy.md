@@ -50,6 +50,14 @@
 - 日志与错误：必须记录阶段日志（启动/流量/合并），缺少输出或超时返回非零或标注 status=error；stdout 摘要包含 dynamic/static 计数与报告路径。  
 - 数据安全：不上传业务数据，输出仅用于接口定义与样例；PII 仅作标签示例，实际环境需脱敏处理。
 
+## 验收要点（7.2）
+
+- Schema 评审：`dynamic/interfaces/input_schema.json`、`output_schema.json` 与现有报告字段兼容，动态扩展不破坏 meta/findings/stats。  
+- 样例输出：`dynamic/samples/` 和 `merge_demo.py` 可运行并通过测试，合并去重与统计符合预期。  
+- 运行策略：动态检测作为可选 nightly/独立 job，失败不阻断；缺失动态数据时仍保留静态报告。  
+- 日志/退出码：缺少输出、解析失败、超时应返回非零或标注 status=error，并在日志/摘要中体现；存在 findings 不导致失败。  
+- 风险明确：反调试/TLS Pinning 绕过、设备依赖、自动化触发路径、数据安全（脱敏/不上传）均已在文档中列出。
+
 ## TODO/风险
 
 - TLS Pinning 绕过、证书注入方案待与 mitmproxy 预研（见任务 5.x）。  

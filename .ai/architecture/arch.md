@@ -46,6 +46,12 @@ flowchart TD
 
 ## Data Models, API Specs, Schemas, etc...
 
+### 规则同步（在线与本地缓存）
+
+- 在线源：直接使用 PRD “法规参考链接” 中的官方地址（https/git/oci），rulesync 默认同步全部法规（GDPR、CCPA/CPRA、LGPD、PIPL、APPI 等），支持 `--regulations` 指定子集。  
+- 本地存储：按法规隔离目录 `~/.minos/rules/<regulation>`，仅保留最新版本（覆盖旧版），法规间互不覆盖，可并行存在。  
+- 校验与模式：下载后校验完整性（SHA256/可选签名），支持离线模式读取已缓存版本。
+
 ### 扫描结果数据模型（简要）
 
 ```json
@@ -80,6 +86,7 @@ flowchart TD
 ### 核心组件
 
 - 规则同步器（rulesync）：从受控仓库拉取/校验规则包，支持离线缓存与回滚。
+  - 在线同步：默认同步“法规参考链接”中的全部法规，可通过参数指定法规子集；每个法规单独存储于 `~/.minos/rules/<regulation>`，仅保留最新版本。
 - 规则引擎：解析 YAML/JSON 规则，编译匹配器（正则/AST/清单节点等）。
 - 静态扫描器：
   - Manifest/权限与导出组件检查

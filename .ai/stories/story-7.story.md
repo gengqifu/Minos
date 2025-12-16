@@ -27,7 +27,7 @@ Story Points: 1
 2. - [x] 实现测试用例（自动化/可执行示例）  
    - [x] 2.1 编写/配置可运行的 CI 示例测试（本地 runner/容器模拟）验证工件产出与摘要  
    - [x] 2.2 校验退出码、工件路径、报告/schema、缺少输入报错  
-3. - [ ] GitHub Actions 示例  
+3. - [x] GitHub Actions 示例  
    - [x] 3.1 使用官方容器镜像/本地运行方式（可选）  
    - [x] 3.2 参数示例：地区/法规、输入路径、输出目录、log-level；缓存规则目录（可选）  
    - [x] 3.3 上传工件：HTML/JSON 报告、日志文件  
@@ -111,5 +111,7 @@ flowchart TD
 - Assistant: 标记 Story-3 任务 2 完成
 - User: 执行任务3.2  
 - Assistant: 在 GitHub Actions 示例中参数化地区/法规/输入/输出/日志级别与缓存目录并勾选 3.2
+- User: 标记任务3完成  
+- Assistant: 标记 Story-3 任务 3 完成
 - User: 执行任务3.3  
 - Assistant: 确认 GitHub Actions 工件上传（HTML/JSON 报告与日志）配置并勾选 3.3

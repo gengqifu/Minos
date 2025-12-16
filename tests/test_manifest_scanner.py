@@ -112,3 +112,29 @@ def test_scan_from_apk_with_plain_manifest(tmp_path: Path):
     ]
     findings, _ = manifest_scanner.scan_manifest(apk_path, rules, source_flags={"EXPORTED_ACTIVITY": "region"})
     assert any(f["rule_id"] == "EXPORTED_ACTIVITY" for f in findings)
+
+
+def test_findings_fields_and_stats(tmp_path: Path):
+    manifest = """
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+      <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+      <application>
+        <activity android:name=".ExposedActivity" android:exported="true"/>
+      </application>
+    </manifest>
+    """
+    manifest_path = _write_manifest(tmp_path, manifest)
+    rules = [
+        _make_rule("PERM_SENSITIVE_LOCATION", "permission", pattern="android.permission.ACCESS_FINE_LOCATION", regulation="PIPL", severity="high"),
+        _make_rule("EXPORTED_ACTIVITY", "component", component="activity", regulation="GDPR", severity="high"),
+    ]
+    findings, stats = manifest_scanner.scan_manifest(
+        manifest_path,
+        rules,
+        source_flags={"PERM_SENSITIVE_LOCATION": "region", "EXPORTED_ACTIVITY": "manual"},
+    )
+    required_keys = {"rule_id", "regulation", "source", "location", "evidence", "severity", "recommendation"}
+    for f in findings:
+        assert required_keys.issubset(f.keys())
+    assert stats["count_by_regulation"].get("PIPL", 0) >= 1
+    assert stats["count_by_regulation"].get("GDPR", 0) >= 1

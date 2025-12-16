@@ -28,7 +28,7 @@ Story Points: 3
    - [x] 2.1 Dockerfile：基础镜像（python 3.10+，含 unzip/zip，必要时 openjdk 17）、安装依赖、复制源码、设置工作目录/ENTRYPOINT  
    - [x] 2.2 支持构建参数（PIP_INDEX_URL/HTTP_PROXY 等），预置规则缓存目录（空），ENTRYPOINT 使用 containers/entrypoint.sh  
 3. - [ ] 容器运行与缓存策略  
-   - [ ] 3.1 规则缓存挂载约定（默认 /root/.minos/rules），无网时示例命令；确保写权限  
+   - [x] 3.1 规则缓存挂载约定（默认 /root/.minos/rules），无网时示例命令；确保写权限  
    - [ ] 3.2 输出目录挂载与权限（/work/output/reports），与 CLI 保持一致  
 4. - [ ] 容器验收与 smoke 测试  
    - [ ] 4.1 在容器内运行 `minos scan --mode source` 示例，验证 JSON/HTML 报告与 stdout 摘要  

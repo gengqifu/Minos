@@ -9,6 +9,13 @@ env:
   MINOS_OUTPUT_DIR: output/reports
   MINOS_LOG_DIR: output/logs
   MINOS_RULE_CACHE: ~/.minos/rules
+  MINOS_INPUT_SRC: tests
+  MINOS_APK_PATH: ci/fixtures/dummy.apk
+  MINOS_REGIONS: eu
+  MINOS_REGULATIONS: gdpr
+  MINOS_LOG_LEVEL: info
+  MINOS_FORMAT_LOCAL: both
+  MINOS_FORMAT_CONTAINER: json
 
 jobs:
   scan-local:
@@ -40,13 +47,13 @@ jobs:
           mkdir -p "${MINOS_OUTPUT_DIR}" "${MINOS_LOG_DIR}"
           python -m minos.cli scan \
             --mode source \
-            --input tests \
-            --regions eu \
-            --regulations gdpr \
+            --input "${MINOS_INPUT_SRC}" \
+            --regions "${MINOS_REGIONS}" \
+            --regulations "${MINOS_REGULATIONS}" \
             --output-dir "${MINOS_OUTPUT_DIR}" \
-            --format both \
+            --format "${MINOS_FORMAT_LOCAL}" \
             --log-file "${MINOS_LOG_DIR}/scan.log" \
-            --log-level info
+            --log-level "${MINOS_LOG_LEVEL}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -78,14 +85,14 @@ jobs:
             minos:ci \
             minos scan \
               --mode both \
-              --input tests \
-              --apk-path ci/fixtures/dummy.apk \
-              --regions eu \
-              --regulations gdpr \
+              --input "${MINOS_INPUT_SRC}" \
+              --apk-path "${MINOS_APK_PATH}" \
+              --regions "${MINOS_REGIONS}" \
+              --regulations "${MINOS_REGULATIONS}" \
               --output-dir "${MINOS_OUTPUT_DIR}" \
-              --format json \
+              --format "${MINOS_FORMAT_CONTAINER}" \
               --log-file "${MINOS_LOG_DIR}/scan-container.log" \
-              --log-level info
+              --log-level "${MINOS_LOG_LEVEL}"
 
       - name: Upload artifacts (container)
         uses: actions/upload-artifact@v4

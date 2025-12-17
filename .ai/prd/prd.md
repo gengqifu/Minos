@@ -22,6 +22,7 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 静态分析：Manifest 权限/导出组件、第三方 SDK、敏感 API/字符串、出网域名、明文密钥。
   - 构建后校验：支持对混淆后的 APK 做静态扫描，核对依赖与配置。
   - 动态扩展：预留接口对接 Frida/mitmproxy（放在后续迭代或 nightly）。
+  - 规则文档转换：从“法规参考链接”抓取 HTML/PDF 文档，使用通用框架 + 站点适配器转换为规则 YAML（不使用 LLM）。
   - 报告：HTML + JSON 输出，标注风险等级、法规条款、证据定位与建议。
   - CI 集成：提供 CLI/容器镜像，支持 PR 阶段快速扫描与发布前深度扫描；stdout 简洁摘要（风险计数、报告路径）；无阻断策略。
 - 非功能需求：
@@ -82,10 +83,22 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
 - APPI（日本）：<https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/>
 - 其他可扩展法规：支持用户自定义添加官方链接（如 PDPA、UK GDPR 等）。
 
+### 法规文档适配范围（约定）
+
+- 语言：默认英文；若页面不提供英文，使用页面默认语言。
+- 文档类型：支持 HTML 与 PDF。
+- 抽取范围：仅抽取“正文条款”，不包含附件、目录、索引等。
+
 ### 规则数据形态与管理
 
 - 规则配置采用 YAML（可导出 JSON），字段包含：rule_id、法规来源（法规/地区）、严重级别、匹配范围（manifest/SDK/API/域名/资源等）、匹配条件（正则/AST/清单节点）、证据提取方式、建议、规则版本。
 - 规则集支持版本管理、禁用/覆盖；规则数据驱动，无需改代码即可增改规则。
+
+### 法规文档转换输出字段（建议）
+
+- 必填字段：rule_id、regulation、title、clause、description、source_url、version。
+- 可选字段：severity（默认 medium）、pattern、evidence、recommendation、confidence（0~1）、issues（字符串数组）。
+- 章节拆分：基于条款编号（Article/Section/Chapter 等），优先识别编号与标题；标题缺失时可用条款首句截断补齐。
 
 ### 规则获取与同步
 
@@ -96,7 +109,10 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
 - 规则仓库与分发：规则以 YAML/JSON 打包发布在受控仓库（私有/公开 git 或 OCI 制品库），通过 https/git/oci 拉取；发布提供版本号与完整性校验（SHA256，可选 GPG），CLI（如 rulesync）负责同步/更新；保留旧版本便于回滚，并在文档列出工具版本与规则版本的兼容矩阵。
 - 规则更新策略：默认手动更新（CLI rulesync），可选“检查新版本”提示，不自动覆盖；保留上一个版本便于回滚；文档列出工具版本与规则版本的兼容范围。
 - 本地缓存/离线：本地缓存目录（如 ~/.minos/rules），记录版本和签名；失效策略=显式更新或手动清理；无网时使用最新缓存。
-- 在线规则同步：rulesync 支持通过命令行指定法规集（如 `--regulations gdpr --regulations ccpa`），默认同步“法规参考链接”中列出的全部法规（GDPR、CCPA/CPRA、LGPD、PIPL、APPI 等）；不同法规集在本地以隔离的规则集存储和命名（`~/.minos/rules/<regulation>`），互不覆盖，可并行存在，仅保留最新版本（覆盖旧版本）；在线源直接使用“法规参考链接”中的地址（https/git/oci），下载后校验完整性。
+- 在线规则同步：rulesync 支持通过命令行指定法规集（如 `--regulations gdpr --regulations ccpa`），默认同步“法规参考链接”中列出的全部法规（GDPR、CCPA/CPRA、LGPD、PIPL、APPI 等）。
+- 法规文档转换：内置“通用框架 + 站点适配器”将法规链接的 HTML/PDF 转换为规则 YAML，不依赖 LLM；站点结构变更需更新适配器。
+- 缓存与落地：不同法规集在本地以隔离的规则集存储和命名（`~/.minos/rules/<regulation>`），互不覆盖，可并行存在，仅保留最新版本（覆盖旧版本）。
+- 适配器扩展：适配器遵循开闭原则，通过接口与注册发现机制扩展站点支持，新增站点无需修改通用框架核心逻辑。
 
 ### 报告结构（HTML/JSON 同步字段）
 
@@ -173,12 +189,12 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 支持本地缓存与回滚；CLI 触发更新与检查版本  
   - 记录规则来源和版本，供扫描与报告引用  
   
-- Story 2: 在线规则同步与法规集隔离缓存  
+- Story 2: 法规文档抓取与转换（通用框架 + 站点适配器）  
   Status:  
   Requirements:  
-  - 在线源同步（PRD 法规参考链接）与法规子集参数  
-  - 缓存按法规隔离，仅保留最新版本  
-  - 离线模式使用缓存，失败不覆盖已有缓存  
+  - 通用框架：下载/清洗/分段/生成规则 YAML  
+  - 站点适配器：GDPR/CCPA/CPRA/LGPD/PIPL/APPI  
+  - 不使用 LLM，解析失败需输出定位信息  
 
 ## Epic 2: Story List
 
@@ -230,3 +246,10 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   Requirements:  
   - 预研 Frida/mitmproxy 集成方案
   - 定义可插拔的动态检测接口
+
+## Change Log
+
+| Change | Story ID | Description |
+| --- | --- | --- |
+| 法规文档转换方案 | story-10 | 增加通用框架 + 站点适配器的在线法规文档转换（不使用 LLM） |
+| 适配范围与输出字段 | story-10 | 明确语言/文档类型/抽取范围与转换输出字段建议 |

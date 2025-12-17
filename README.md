@@ -69,7 +69,19 @@ PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.1.0.tar.gz v1.1
 PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.2.0.tar.gz v1.2.0 \
   --sha256 <digest> --cache-dir ~/.minos/rules --cleanup-keep 2
 ```
-- **在线同步（规划中）**：PRD 要求支持按法规子集同步与法规隔离缓存；当前实现仍使用本地规则包路径。
+- **远端同步（HTTP）**：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync https://example.com/rules.tar.gz v1.0.0 \
+  --sha256 <digest> --cache-dir ~/.minos/rules
+```
+- **远端同步（git/OCI）**：需要本地安装 `git` 或 `oras`，支持 `#path=` 指定制品路径。
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync \
+  git+https://example.com/rules.git#path=dist/rules.tar.gz v1.0.0 --cache-dir ~/.minos/rules
+
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync \
+  oci://example.com/minos/rules:1.0.0#path=rules.tar.gz v1.0.0 --cache-dir ~/.minos/rules
+```
 
 ## 报告与输出
 

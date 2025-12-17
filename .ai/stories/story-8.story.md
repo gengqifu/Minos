@@ -43,7 +43,7 @@ Story Points: 2
 6. - [ ] 远端在线同步实现  
    - [x] 6.1 支持 HTTP/git/OCI 远端下载规则包到本地缓存（使用 PRD 法规参考链接）  
    - [x] 6.2 远端下载失败重试/超时/错误提示与退出码  
-   - [ ] 6.3 CLI rulesync 支持直接使用远端 source（不再要求本地 tar.gz）  
+   - [x] 6.3 CLI rulesync 支持直接使用远端 source（不再要求本地 tar.gz）  
    - [ ] 6.4 容器使用说明：容器内 rulesync 远端 source 示例与网络/证书/缓存注意事项
 
 ## Constraints
@@ -130,3 +130,5 @@ Story Points: 2
 - Assistant: 实现 HTTP/git/OCI 远端下载到本地缓存能力，并勾选 6.1
 - User: 执行任务6.2  
 - Assistant: 增加远端下载超时/错误提示与 CLI 超时参数支持，并勾选 6.2
+- User: 执行任务6.3  
+- Assistant: CLI 允许直接使用远端 source，并补充用例与说明，勾选 6.3

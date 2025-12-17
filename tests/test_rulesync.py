@@ -217,6 +217,32 @@ def test_cli_rulesync_retries_then_success(monkeypatch, tmp_path: Path):
     assert calls["n"] == 2
 
 
+def test_cli_rulesync_remote_source_http(monkeypatch, tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+
+    def fake_download_http(source: str, dest: Path, timeout: int = 30) -> None:
+        shutil.copyfile(pkg_path, dest)
+
+    monkeypatch.setattr(rulesync, "_download_http", fake_download_http)
+
+    args = [
+        "rulesync",
+        "https://example.com/rules.tar.gz",
+        "v1.0.0",
+        "--sha256",
+        sha256,
+        "--cache-dir",
+        str(cache_dir),
+    ]
+
+    exit_code = cli.main(args)
+    assert exit_code == 0
+    meta = _read_metadata(cache_dir, "v1.0.0")
+    assert meta["source"] == "https://example.com/rules.tar.gz"
+
+
 def test_cli_rollback_to_previous(tmp_path: Path):
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()

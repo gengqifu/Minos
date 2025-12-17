@@ -14,7 +14,7 @@ from minos import rulesync
 
 def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("rulesync", help="同步规则包")
-    parser.add_argument("source", help="规则包源（文件路径/git/oci/https），当前支持本地 tar.gz")
+    parser.add_argument("source", help="规则包源（文件路径/https/git+/oci://）")
     parser.add_argument("version", help="规则版本/标签")
     parser.add_argument(
         "--regulations",

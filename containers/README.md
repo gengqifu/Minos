@@ -30,6 +30,17 @@ docker run --rm \
 - 默认容器内缓存目录：`/root/.minos/rules`，建议宿主机挂载 `~/.minos/rules:/root/.minos/rules`。  
 - 无网/受限网络：先在宿主机执行 `minos rulesync ... --cache-dir ~/.minos/rules --offline`，再运行容器复用缓存。  
 - 挂载时请确保宿主目录存在且可写，否则容器可能无法写入缓存。  
+- 在线同步（容器内）：  
+  ```bash
+  docker run --rm \
+    -v "$PWD":/work -w /work \
+    -v "$HOME/.minos/rules":/root/.minos/rules \
+    minos:latest \
+    minos rulesync <source> <version> --sha256 <digest> \
+      --cache-dir /root/.minos/rules \
+      --regulations gdpr --regulations ccpa
+  ```
+  说明：默认无 `--regulations` 同步 PRD 法规参考链接中的全部法规；缓存按 `/root/.minos/rules/<regulation>` 隔离，仅保留最新版本。  
 
 输出目录挂载与权限：
 - 推荐挂载宿主目录到容器 `/work/output`（或自定义）以便保存报告/日志：`-v "$PWD/output":/work/output`。  

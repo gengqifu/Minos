@@ -7,7 +7,7 @@
 
 ## Status
 
-Draft
+Approved
 
 ## Context
 
@@ -96,6 +96,8 @@ Story Points: 2
 - Assistant: 补充远端同步覆盖场景并勾选 1.3
 - User: 执行任务1.4  
 - Assistant: 补充远端同步断言并勾选 1.4
+- User: [story-8.story.md](.ai/stories/story-8.story.md) 批准文档  
+- Assistant: 更新状态为 Approved
 - User: 执行任务2.1  
 - Assistant: 添加在线同步模拟测试用例（xfail，覆盖全量/子集/失败保留缓存）并勾选 2.1  
 - User: 执行任务2.2  

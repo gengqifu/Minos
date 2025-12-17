@@ -7,7 +7,7 @@ import json
 import tarfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 
 class RulesyncError(Exception):
@@ -183,3 +183,52 @@ def cleanup(cache_dir: Path, keep: int = 3) -> None:
                 target_dir.rmdir()
             except OSError:
                 pass
+
+
+# 默认法规列表（来自 PRD 法规参考链接）
+DEFAULT_REGULATIONS = ["gdpr", "ccpa", "cpra", "lgpd", "pipl", "appi"]
+
+
+def sync_regulations(
+    regulations: Optional[list[str]],
+    version: str,
+    cache_root: Path,
+    downloader: Optional[Callable[[str, str, Path], str]] = None,
+    cleanup_keep: Optional[int] = None,
+    offline: bool = False,
+) -> None:
+    """
+    同步多个法规集，默认同步 PRD 法规参考链接中的全部法规。
+    - regulations: None 表示同步默认列表；否则同步指定子集
+    - cache_root: 根缓存目录，下级按法规隔离 (~/.minos/rules/<regulation>)
+    - downloader: 可注入的下载器，签名 downloader(regulation, version, cache_root) -> sha256
+    - cleanup_keep: 同步成功后保留的版本数（按法规目录内处理）
+    - offline: 离线模式，仅使用已有缓存，缺失则报错
+    """
+    regs = regulations or DEFAULT_REGULATIONS
+    cache_root.mkdir(parents=True, exist_ok=True)
+
+    if downloader is None and not offline:
+        raise RulesyncError("在线规则同步未实现，请提供 downloader 或启用离线模式")
+
+    for reg in regs:
+        reg_dir = cache_root / reg
+        reg_dir.mkdir(parents=True, exist_ok=True)
+
+        if offline:
+            active = get_active_path(reg_dir)
+            if active is None:
+                raise RulesyncError(f"离线模式下未找到 {reg} 缓存")
+            print(f"[rulesync] offline use cached {reg} -> {active}")
+            continue
+
+        # 通过注入 downloader 拉取指定法规版本并写入隔离目录
+        try:
+            downloader(reg, version, reg_dir)  # type: ignore[misc]
+        except RulesyncError:
+            raise
+        except Exception as exc:
+            raise RulesyncError(f"同步 {reg} 失败: {exc}") from exc
+
+        if cleanup_keep and cleanup_keep > 0:
+            cleanup(reg_dir, keep=cleanup_keep)

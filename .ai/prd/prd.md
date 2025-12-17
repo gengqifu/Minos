@@ -76,7 +76,7 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
 ### 法规参考链接（官方/权威发布页）
 
 - GDPR：<https://eur-lex.europa.eu/eli/reg/2016/679/oj>
-- CCPA/CPRA：<https://oag.ca.gov/privacy/ccpa>
+- CCPA/CPRA：<https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5>
 - LGPD：<https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/L13709.htm>
 - PIPL（个人信息保护法）：<https://www.epicor.cn/company/compliance/pipl/>
 - APPI（日本）：<https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/>

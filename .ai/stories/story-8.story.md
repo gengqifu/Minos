@@ -1,143 +1,113 @@
-# Epic-N - Story-1
-# 动态流量与运行时检测预研（Frida/mitmproxy 接口预留）
+# Epic-1 - Story-2
+# 在线规则同步与法规集隔离缓存
 
-**As a** 合规/安全研究员  
-**I want** 预研动态检测方案（Frida Hook 与 mitmproxy 流量抓取）的接口与集成路径  
-**so that** 为后续版本提供可插拔的运行时与流量检测能力
+**As a** 合规工具使用者/CI 运维  
+**I want** 通过 CLI 从在线源同步指定法规集并按法规隔离缓存  
+**so that** 能一键获取最新规则（默认全量法规），且不同法规集互不覆盖、可独立更新
 
 ## Status
 
-Approved
+Draft
 
 ## Context
 
-- Epic-N 为后续迭代，当前仅做预研与接口定义，不在首版发布范围。  
-- 目标：界定可插拔的运行时（Frida/Xposed）与流量检测（mitmproxy/pcap）接口，定义输出格式与与静态结果的合并策略。  
-- 需与 PRD 的规则数据驱动、报告字段、日志要求保持一致；不破坏现有 CI 流程（可放 nightly 或独立任务）。
+- 基于 PRD 更新：rulesync 需支持在线源（使用 “法规参考链接” 中的官方地址），默认同步全部法规集，支持 CLI 参数指定法规子集。  
+- 本地缓存目录需按法规隔离（`~/.minos/rules/<regulation>`），仅保留最新版本覆盖旧版，并校验完整性（SHA256/可选签名）。  
+- 需兼容无网/受限环境：已有缓存可离线使用；失败时不影响其他法规集。
 
 ## Estimation
 
-Story Points: 1
+Story Points: 2
 
 ## Tasks
 
-1. - [x] 设计预研用例（TDD 先行，偏设计验收）  
-   - [x] 1.1 覆盖：Frida Hook 输出格式、mitmproxy 流量标签、与静态 findings 合并、错误与超时处理  
-   - [x] 1.2 断言：接口返回 schema、合并后报告字段一致性、退出码与日志规范  
-2. - [x] 实现测试用例/样例（自动化或可运行样例）  
-   - [x] 2.1 提供 schema 校验、合并逻辑的自动化测试或可运行样例（含动态/静态合并）  
-   - [x] 2.2 覆盖错误/超时/无输出等场景的断言  
-3. - [x] 定义动态检测插件接口  
-   - [x] 3.1 插件元数据（名称、版本、支持的 hook/流量类型）  
-   - [x] 3.2 输入/输出 schema（与静态 findings 兼容：rule_id/位置/证据/严重级别/来源标记）  
-   - [x] 3.3 生命周期与运行模式（nightly/独立 CI job），超时与失败策略  
-4. - [x] 预研 Frida 集成路径  
-   - [x] 4.1 如何注入/启动 Frida server、脚本示例、常见反调试绕过思路（记录，不实现）  
-   - [x] 4.2 Hook 重点：敏感 API 调用、标识收集、出网目标；输出映射到 findings 格式  
-5. - [x] 预研 mitmproxy/流量捕获路径  
-   - [x] 5.1 代理/证书注入、受 TLS Pinning 影响的绕过思路（记录，不实现）  
-   - [x] 5.2 PII/ID/域名识别规则与标签；输出映射到 findings 格式  
-6. - [x] 合并与报告策略  
-   - [x] 6.1 动态 findings 与静态 findings 的合并规则（去重、优先级、来源标记=dynamic）  
-   - [x] 6.2 报告新增字段：检测类型（static/dynamic）、时间戳、会话 ID（可选）  
-7. - [x] 文档与验收  
-   - [x] 7.1 预研结论文档：接口定义、样例输出、限制与风险（反调试、证书校验、自动化成本）  
-   - [x] 7.2 验收：接口 schema 评审通过，样例输出与合并策略明确
+1. - [x] 设计测试用例（TDD 先行）  
+   - [x] 1.1 覆盖：默认同步全量法规、指定法规子集、按法规隔离缓存、覆盖旧版本、校验失败/网络失败、离线使用已缓存  
+   - [x] 1.2 断言：缓存目录结构（~/.minos/rules/<regulation>）、仅保留最新版本、metadata 正确记录来源/版本/校验结果、退出码/日志  
+   - [ ] 1.3 远端同步覆盖：HTTP/git/OCI 下载成功、校验失败、超时/重试、断网失败场景  
+   - [ ] 1.4 远端同步断言：下载失败不覆盖旧缓存，错误信息/退出码符合约定  
+2. - [x] 实现测试用例（自动化）  
+   - [x] 2.1 本地模拟在线源（本地 HTTP/文件）与法规子集参数的测试，验证缓存结构与覆盖策略  
+   - [x] 2.2 覆盖校验失败/网络失败/离线缓存的退出码与日志断言  
+   - [ ] 2.3 远端同步测试实现：HTTP/git/OCI 下载成功/失败/重试/断网覆盖  
+3. - [x] CLI 与 rulesync 扩展  
+   - [x] 3.1 新增 `--regulations` 多值参数，默认同步 PRD 法规参考链接全部法规；支持一次同步多个法规集  
+   - [x] 3.2 允许以远端 source 作为参数输入（占位），调用法规隔离同步接口；实际远端下载在任务 6 实现  
+   - [x] 3.3 离线模式：无网时使用已有缓存，缺失目标法规时返回非零并提示  
+4. - [x] 缓存与元数据  
+   - [x] 4.1 缓存目录 `~/.minos/rules/<regulation>`，仅保留最新版本；记录版本/来源/校验结果/安装时间/激活标记（按法规隔离）  
+   - [x] 4.2 清理或覆盖策略：同步成功后覆盖旧版并更新 metadata；保留失败日志  
+5. - [x] 文档与验收  
+   - [x] 5.1 更新 README/rulesync 使用说明：在线同步、法规子集、缓存结构、离线模式示例  
+   - [x] 5.2 验收用例：全量同步、指定法规、校验失败、离线使用缓存、覆盖旧版、日志与退出码（远端下载验收见任务 6）
+6. - [ ] 远端在线同步实现  
+   - [ ] 6.1 支持 HTTP/git/OCI 远端下载规则包到本地缓存（使用 PRD 法规参考链接）  
+   - [ ] 6.2 远端下载失败重试/超时/错误提示与退出码  
+   - [ ] 6.3 CLI rulesync 支持直接使用远端 source（不再要求本地 tar.gz）  
+   - [ ] 6.4 容器使用说明：容器内 rulesync 远端 source 示例与网络/证书/缓存注意事项
 
 ## Constraints
 
-- 不在首版交付范围，不破坏现有 CI 路径；可作为 nightly/独立任务。  
-- 不上传业务数据；预研输出仅为接口定义与样例。  
-- 与现有报告/日志/规则格式兼容（字段一致）。
-
-## Data Models / Schema
-
-- 动态检测输出示例：
-
-```json
-{
-  "type": "dynamic",
-  "source": "frida",
-  "rule_id": "RUNTIME_ID_ACCESS",
-  "regulation": "GDPR",
-  "severity": "medium",
-  "location": "com.example.MainActivity#getDeviceId()",
-  "evidence": "IMEI accessed at runtime",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "session": "run-001"
-}
-```
+- 在线源使用 PRD “法规参考链接” 的地址；支持 https/git/oci。  
+- 默认同步全部法规；用户可指定子集。  
+- 规则集本地隔离存储且仅保留最新版本，互不覆盖。  
+- 兼容无网/受限网络，使用已有缓存。
 
 ## Structure
 
-- `dynamic/interfaces/`：插件接口与 schema 定义  
-- `dynamic/samples/`：示例 Frida/mitmproxy 输出  
-- `docs/dynamic-prestudy.md`：预研结论与限制
-
-## Diagrams
-
-```mermaid
-flowchart TD
-    HOOK["Frida/Hook 脚本"] --> DYN["动态 findings (runtime)"]
-    PROXY["mitmproxy/pcap"] --> DYN
-    DYN --> MERGE["合并器 (静态+动态)"]
-    MERGE --> REPORT["报告生成 (标注检测类型)"]
-```
-
-## Dev Notes
-
-- 聚焦接口与格式，不落实现码；记录绕过与限制，作为后续开发参考。  
-- TDD：以 schema/合并逻辑的测试与样例输出作为验收基线。
+- `minos/cli.py` rulesync 参数扩展  
+- `minos/rulesync/`：下载/校验/落地与缓存管理  
+- `tests/`：规则同步与缓存结构的测试/模拟源
 
 ## Test Plan（设计）
 
-- Frida Hook 输出：样例 JSON 含 `type=dynamic`、`source=frida`、`rule_id/region/severity/location/evidence/timestamp/session`，覆盖敏感 API Hook（ID/网络/位置）。  
-- mitmproxy 输出：流量条目含 `source=mitmproxy`、`pii_tags`、`domains`、`session/request_id`，区分明文/加密与证书校验结果，标注 TLS Pinning 绕过状态。  
-- 合并逻辑：静态 findings + 动态 findings 去重（rule_id+location），动态来源标记 `detection_type=dynamic`，并集统计汇总保持 schema 一致（meta/findings/stats）。  
-- 错误与超时：无输出/超时/异常时返回非零或标注 `status=error`，日志包含错误原因，报告中不生成空 findings。  
-- 输出格式：定义共用 JSON schema（动态/静态共用字段+动态扩展），确保可与现有报告生成兼容。
+- 默认全量同步：无 `--regulations` 时拉取 PRD 法规参考链接中的全部法规（GDPR/CCPA/CPRA/LGPD/PIPL/APPI…），每个法规对应 `~/.minos/rules/<regulation>`，仅保留最新版本。  
+- 指定法规子集：如 `--regulations gdpr --regulations ccpa` 仅同步子集；其他未指定法规不应新增/覆盖。  
+- 缓存覆盖与隔离：同一法规多次同步覆盖旧版本（同目录），不同法规互不覆盖；metadata 记录版本/来源/校验结果/安装时间/激活标记。  
+- 校验失败/网络失败：错误时退出码非零，日志包含失败原因，已有缓存不被覆盖。  
+- 离线模式：在无网或模拟失败时使用已有缓存，缺失目标法规时退出码非零并提示缺少缓存。  
+- 结构验证：检查目录结构、metadata 内容、激活版本指针；确认只保留最新版本（旧版本被覆盖或清理）。
 
 ## Assertions（设计）
 
-- Schema：接口/样例输出必须符合统一 JSON schema（字段：type/source/rule_id/regulation/severity/location/evidence/timestamp/session/status），静态/动态字段并集兼容现有报告 meta/findings/stats。  
-- 合并一致性：合并后报告保持 meta/findings/stats 三段，findings 标记 `detection_type=static|dynamic`，去重键=rule_id+location+source；stats 汇总包含动态来源的计数。  
-- 退出码：接口/脚本成功返回 0；缺少输入、超时或解析失败返回非零；存在 findings 不导致失败（无阻断）。  
-- 日志规范：日志必须包含阶段信息（hook 启动/流量截获/合并）、错误原因（缺少输出/超时）、输出路径；stdout 摘要包含 dynamic/static 计数与报告路径。  
-- 错误场景：Frida 未连接/mitmproxy 无流量时应记录 warning 或 error，并返回非零退出码或显式 status=error，且不输出空 findings；超时应中止并给出超时提示。
+- 缓存结构：`~/.minos/rules/<regulation>` 存在且仅保留最新版本；不同法规目录互不覆盖。  
+- metadata：包含 version/source/sha256/installed_at/active/status；覆盖旧版后 metadata 更新为最新版本并 active=true。  
+- 退出码：成功=0；校验失败、网络失败、缺少缓存（离线）=非零；失败时不覆盖已有缓存。  
+- 日志：stdout 摘要包含同步法规列表、目标路径；错误/校验失败日志明确原因。  
+- 默认全量：无参数时同步 PRD 法规参考链接中全部法规；子集模式仅落地指定法规。  
+- 离线：有缓存则使用并退出码=0；无缓存且离线时退出码非零并提示缺少缓存。
 
 ## Chat Command Log
 
-- User: 生成下一个 story  
-- Assistant: 起草 Epic-N Story-1（动态流量与运行时检测预研）草稿  
+- User: OK，那新建story吧  
+- Assistant: 创建 Epic-1 Story-2（在线规则同步与法规集隔离缓存）草稿  
 - User: [story-8.story.md](.ai/stories/story-8.story.md) 执行任务1.1  
-- Assistant: 设计动态检测预研覆盖用例并勾选 1.1  
+- Assistant: 设计测试覆盖清单（全量/子集/隔离缓存/覆盖/失败/离线）并勾选 1.1
 - User: 执行任务1.2  
-- Assistant: 补充断言（schema/合并/退出码/日志）并勾选 1.2  
-- User: 标记任务1完成  
-- Assistant: 标记 Story-8 任务 1 完成
+- Assistant: 补充分层断言（缓存结构/metadata/退出码/日志/离线等）并勾选 1.2  
 - User: 执行任务2.1  
-- Assistant: 提供动态/静态合并可运行样例并勾选 2.1
+- Assistant: 添加在线同步模拟测试用例（xfail，覆盖全量/子集/失败保留缓存）并勾选 2.1  
 - User: 执行任务2.2  
-- Assistant: 为错误/无输出场景补充校验用例并勾选 2.2
+- Assistant: 补充失败/离线场景断言并勾选 2.2
 - User: 执行任务3.1  
-- Assistant: 添加动态插件元数据说明与输出 schema 并勾选 3.1
+- Assistant: CLI 增加 --regulations 多值参数占位并勾选 3.1
 - User: 执行任务3.2  
-- Assistant: 补充输入/输出 schema（兼容静态字段，含错误场景）并勾选 3.2
-- User: 标记任务3完成  
-- Assistant: 标记 Story-8 任务 3 完成
+- Assistant: 添加 sync_regulations（按法规隔离落地、覆盖旧版、默认法规列表）并勾选 3.2
+- User: 执行任务3.3  
+- Assistant: 完成离线缺少缓存的失败校验并勾选 3.3
 - User: 执行任务4.1  
-- Assistant: 在 docs/dynamic-prestudy.md 记录 Frida 启动/反调试绕过思路并勾选 4.1
+- Assistant: 同步法规默认保留最新版本并通过测试  
 - User: 执行任务4.2  
-- Assistant: 补充 mitmproxy/流量预研输出映射并勾选 4.2  
+- Assistant: 标记缓存覆盖策略与 metadata 目标完成
 - User: 执行任务5.1  
-- Assistant: 记录代理/证书注入与 TLS Pinning 绕过思路并勾选 5.1
-- User: 标记任务4完成  
-- Assistant: 标记 Story-8 任务 4 完成
-- User: 执行任务6.1  
-- Assistant: 记录动态/静态合并策略并勾选 6.1
-- User: 执行任务6.2  
-- Assistant: 补充报告字段扩展（detection_type/timestamp/session）并勾选 6.2
-- User: 执行任务7.1  
-- Assistant: 补充预研结论与风险并勾选 7.1
-- User: 执行任务7.2  
-- Assistant: 补充验收要点并勾选 7.2
+- Assistant: 更新 README 说明在线 rulesync/法规子集/缓存与离线模式，并勾选 5.1
+- User: 执行任务5.2  
+- Assistant: 补充验收用例（全量/子集/校验失败/离线缓存/覆盖旧版/日志与退出码）并勾选 5.2
+- User: 标记任务5完成  
+- Assistant: 标记 Story-9 任务 5 完成
+- User: 在 Story-9 补充远端在线同步任务  
+- Assistant: 新增任务 6（远端 HTTP/git/OCI 同步实现）
+- User: 执行任务4.1  
+- Assistant: 强化按法规缓存目录和仅保留最新版本的测试，准备勾选 4.1
+- User: 标记任务3完成  
+- Assistant: 标记 Story-9 任务 3 完成

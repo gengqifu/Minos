@@ -4,7 +4,12 @@
 
 import hashlib
 import json
+import shutil
+import subprocess
 import tarfile
+import tempfile
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
@@ -24,6 +29,104 @@ def _calc_sha256(file_path: Path) -> str:
         for chunk in iter(lambda: f.read(8192), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _is_remote_source(source: str) -> bool:
+    return source.startswith(("http://", "https://", "git+", "oci://", "oci+"))
+
+
+def _download_http(source: str, dest: Path, timeout: int = 30) -> None:
+    try:
+        with urllib.request.urlopen(source, timeout=timeout) as resp, dest.open("wb") as out:
+            shutil.copyfileobj(resp, out)
+    except Exception as exc:  # pragma: no cover - 依赖外部网络
+        raise RulesyncError(f"HTTP 下载失败: {exc}") from exc
+
+
+def _parse_source_with_path(source: str) -> tuple[str, Optional[str]]:
+    raw = source.split("#", 1)
+    base = raw[0]
+    path = None
+    if len(raw) == 2:
+        params = urllib.parse.parse_qs(raw[1])
+        if "path" in params and params["path"]:
+            path = params["path"][0]
+    return base, path
+
+
+def _download_git(source: str, dest: Path) -> None:
+    base, path = _parse_source_with_path(source)
+    repo_url = base[len("git+") :]
+    rel_path = Path(path) if path else Path("rules.tar.gz")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        repo_dir = Path(tmpdir) / "repo"
+        try:
+            subprocess.run(
+                ["git", "clone", "--depth", "1", repo_url, str(repo_dir)],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except FileNotFoundError as exc:
+            raise RulesyncError("未找到 git 命令，请先安装 git") from exc
+        except subprocess.CalledProcessError as exc:
+            raise RulesyncError(f"git 拉取失败: {exc.stderr.strip()}") from exc
+
+        target = repo_dir / rel_path
+        if not target.exists():
+            raise RulesyncError(f"git 源未找到路径: {rel_path}")
+
+        if target.is_dir():
+            with tarfile.open(dest, "w:gz") as tar:
+                tar.add(target, arcname="rules")
+        else:
+            shutil.copyfile(target, dest)
+
+
+def _download_oci(source: str, dest: Path) -> None:
+    base, path = _parse_source_with_path(source)
+    ref = base.replace("oci://", "", 1).replace("oci+", "", 1)
+    if not shutil.which("oras"):
+        raise RulesyncError("未找到 oras，请先安装以拉取 OCI 制品")
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_dir = Path(tmpdir) / "oci"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            subprocess.run(
+                ["oras", "pull", ref, "-o", str(out_dir)],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RulesyncError(f"OCI 拉取失败: {exc.stderr.strip()}") from exc
+        rel_path = Path(path) if path else None
+        if rel_path:
+            target = out_dir / rel_path
+            if not target.exists():
+                raise RulesyncError(f"OCI 制品未找到路径: {rel_path}")
+            shutil.copyfile(target, dest)
+            return
+        candidates = list(out_dir.rglob("*.tar.gz"))
+        if len(candidates) != 1:
+            raise RulesyncError("OCI 制品包含多个 tar.gz，请使用 #path 指定")
+        shutil.copyfile(candidates[0], dest)
+
+
+def _prepare_remote_source(source: str, tmpdir: Path) -> Path:
+    tmpdir.mkdir(parents=True, exist_ok=True)
+    dest = tmpdir / "rules.tar.gz"
+    if source.startswith(("http://", "https://")):
+        _download_http(source, dest)
+    elif source.startswith("git+"):
+        _download_git(source, dest)
+    elif source.startswith(("oci://", "oci+")):
+        _download_oci(source, dest)
+    else:
+        raise RulesyncError(f"不支持的远端协议: {source}")
+    return dest
 
 
 def _write_metadata(
@@ -84,37 +187,44 @@ def sync_rules(
         print("[rulesync] offline mode but version not found")
         raise RulesyncError("离线模式下未找到缓存的规则版本")
 
-    source_path = Path(source)
-    if not source_path.exists():
-        print(f"[rulesync] source not found: {source}")
-        raise RulesyncError(f"规则源不存在: {source}")
+    def _sync_from_path(source_path: Path) -> Path:
+        if not source_path.exists():
+            print(f"[rulesync] source not found: {source}")
+            raise RulesyncError(f"规则源不存在: {source}")
 
-    sha256 = _calc_sha256(source_path)
-    if expected_sha256 and sha256 != expected_sha256:
-        print("[rulesync] checksum mismatch")
-        raise RulesyncChecksumError("规则包校验失败")
+        sha256 = _calc_sha256(source_path)
+        if expected_sha256 and sha256 != expected_sha256:
+            print("[rulesync] checksum mismatch")
+            raise RulesyncChecksumError("规则包校验失败")
 
-    if target_dir.exists():
-        # 清理已有版本目录
-        for child in target_dir.iterdir():
-            if child.is_dir():
-                for sub in child.rglob("*"):
-                    if sub.is_file():
-                        sub.unlink()
-                child.rmdir()
-            else:
-                child.unlink()
-        target_dir.rmdir()
-    target_dir.mkdir(parents=True, exist_ok=True)
+        if target_dir.exists():
+            # 清理已有版本目录
+            for child in target_dir.iterdir():
+                if child.is_dir():
+                    for sub in child.rglob("*"):
+                        if sub.is_file():
+                            sub.unlink()
+                    child.rmdir()
+                else:
+                    child.unlink()
+            target_dir.rmdir()
+        target_dir.mkdir(parents=True, exist_ok=True)
 
-    # 解压 tar.gz 到目标目录
-    with tarfile.open(source_path, "r:gz") as tar:
-        tar.extractall(path=target_dir)
+        # 解压 tar.gz 到目标目录
+        with tarfile.open(source_path, "r:gz") as tar:
+            tar.extractall(path=target_dir)
 
-    print(f"[rulesync] synced {version} from {source_path} to {target_dir}")
-    _write_metadata(cache_dir, version, str(source_path), sha256, active=True, gpg=gpg_key)
-    _set_active(cache_dir, version)
-    return target_dir
+        print(f"[rulesync] synced {version} from {source} to {target_dir}")
+        _write_metadata(cache_dir, version, source, sha256, active=True, gpg=gpg_key)
+        _set_active(cache_dir, version)
+        return target_dir
+
+    if _is_remote_source(source):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source_path = _prepare_remote_source(source, Path(tmpdir))
+            return _sync_from_path(source_path)
+
+    return _sync_from_path(Path(source))
 
 
 def list_versions(cache_dir: Path) -> list[str]:

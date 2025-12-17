@@ -41,7 +41,7 @@ Story Points: 2
    - [x] 5.1 更新 README/rulesync 使用说明：在线同步、法规子集、缓存结构、离线模式示例  
    - [x] 5.2 验收用例：全量同步、指定法规、校验失败、离线使用缓存、覆盖旧版、日志与退出码（远端下载验收见任务 6）
 6. - [ ] 远端在线同步实现  
-   - [ ] 6.1 支持 HTTP/git/OCI 远端下载规则包到本地缓存（使用 PRD 法规参考链接）  
+   - [x] 6.1 支持 HTTP/git/OCI 远端下载规则包到本地缓存（使用 PRD 法规参考链接）  
    - [ ] 6.2 远端下载失败重试/超时/错误提示与退出码  
    - [ ] 6.3 CLI rulesync 支持直接使用远端 source（不再要求本地 tar.gz）  
    - [ ] 6.4 容器使用说明：容器内 rulesync 远端 source 示例与网络/证书/缓存注意事项
@@ -126,3 +126,5 @@ Story Points: 2
 - Assistant: 标记 Story-9 任务 3 完成
 - User: 执行任务2.3  
 - Assistant: 增加远端同步测试（HTTP/git/OCI 成功/失败/重试），并勾选 2.3
+- User: 执行任务6.1  
+- Assistant: 实现 HTTP/git/OCI 远端下载到本地缓存能力，并勾选 6.1

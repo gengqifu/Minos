@@ -21,13 +21,12 @@ def _create_pkg(tmpdir: Path, regulation: str, version: str) -> tuple[Path, str]
     return tar_path, sha256
 
 
-@pytest.mark.xfail(reason="在线规则同步尚未实现")
 def test_sync_default_all_regulations_isolates_cache(tmp_path: Path):
     if rulesync is None:
         pytest.skip("rulesync 模块不可用")
 
     cache_root = tmp_path / "rules"
-    regs = ["gdpr", "ccpa", "lgpd", "pipl", "appi"]
+    regs = ["gdpr", "ccpa", "cpra", "lgpd", "pipl", "appi"]
     sources = {}
     for reg in regs:
         pkg, sha = _create_pkg(tmp_path, reg, "v1")
@@ -36,11 +35,10 @@ def test_sync_default_all_regulations_isolates_cache(tmp_path: Path):
     def fake_download(regulation: str, version: str, target_dir: Path):
         pkg, sha = sources[regulation]
         # 模拟下载并解压
-        rulesync.sync_rules(str(pkg), version, cache_dir=target_dir / regulation, expected_sha256=sha)
+        rulesync.sync_rules(str(pkg), version, cache_dir=target_dir, expected_sha256=sha)
         return sha
 
     # 假定将来有 sync_regulations API：传入 None 时默认全量
-    rulesync.sync_regulations = getattr(rulesync, "sync_regulations")  # type: ignore[attr-defined]
     rulesync.sync_regulations(
         regulations=None, version="v1", cache_root=cache_root, downloader=fake_download, cleanup_keep=1
     )
@@ -51,7 +49,6 @@ def test_sync_default_all_regulations_isolates_cache(tmp_path: Path):
         assert (reg_dir / "v1").exists()
 
 
-@pytest.mark.xfail(reason="在线规则同步尚未实现")
 def test_sync_subset_only_target_regulations(tmp_path: Path):
     if rulesync is None:
         pytest.skip("rulesync 模块不可用")
@@ -65,11 +62,10 @@ def test_sync_subset_only_target_regulations(tmp_path: Path):
 
     def fake_download(regulation: str, version: str, target_dir: Path):
         pkg, sha = sources[regulation]
-        rulesync.sync_rules(str(pkg), version, cache_dir=target_dir / regulation, expected_sha256=sha)
+        rulesync.sync_rules(str(pkg), version, cache_dir=target_dir, expected_sha256=sha)
         return sha
 
     target_regs = ["gdpr", "lgpd"]
-    rulesync.sync_regulations = getattr(rulesync, "sync_regulations")  # type: ignore[attr-defined]
     rulesync.sync_regulations(
         regulations=target_regs, version="v1", cache_root=cache_root, downloader=fake_download, cleanup_keep=1
     )
@@ -79,7 +75,6 @@ def test_sync_subset_only_target_regulations(tmp_path: Path):
     assert not (cache_root / "ccpa").exists()
 
 
-@pytest.mark.xfail(reason="在线规则同步尚未实现")
 def test_sync_failure_keeps_existing_cache(tmp_path: Path):
     if rulesync is None:
         pytest.skip("rulesync 模块不可用")
@@ -94,7 +89,6 @@ def test_sync_failure_keeps_existing_cache(tmp_path: Path):
     def broken_download(regulation: str, version: str, target_dir: Path):
         raise rulesync.RulesyncError("network failure")
 
-    rulesync.sync_regulations = getattr(rulesync, "sync_regulations")  # type: ignore[attr-defined]
     with pytest.raises(rulesync.RulesyncError):
         rulesync.sync_regulations(
             regulations=[reg], version="v2", cache_root=cache_root, downloader=broken_download, cleanup_keep=1
@@ -102,3 +96,19 @@ def test_sync_failure_keeps_existing_cache(tmp_path: Path):
 
     # v1 应仍然存在
     assert (cache_root / reg / "v1").exists()
+
+
+def test_offline_without_cache_raises(tmp_path: Path):
+    if rulesync is None:
+        pytest.skip("rulesync 模块不可用")
+
+    cache_root = tmp_path / "rules"
+    reg = "gdpr"
+    with pytest.raises(rulesync.RulesyncError):
+        rulesync.sync_regulations(
+            regulations=[reg],
+            version="v1",
+            cache_root=cache_root,
+            downloader=None,
+            offline=True,
+        )

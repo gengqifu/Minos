@@ -138,3 +138,74 @@ def test_sync_overwrites_old_version_and_keeps_latest(tmp_path: Path):
     rulesync.sync_regulations([reg], "v2", cache_root, downloader=download_v2)
     assert not (cache_root / reg / "v1").exists()
     assert (cache_root / reg / "v2").exists()
+
+
+@pytest.mark.parametrize("protocol", ["http", "git", "oci"])
+def test_remote_sync_success_protocols(tmp_path: Path, protocol: str):
+    if rulesync is None:
+        pytest.skip("rulesync 模块不可用")
+
+    cache_root = tmp_path / "rules"
+    reg = "gdpr"
+    pkg, sha = _create_pkg(tmp_path, reg, "v1")
+
+    def remote_download(regulation: str, version: str, target_dir: Path):
+        assert regulation == reg
+        assert protocol in {"http", "git", "oci"}
+        rulesync.sync_rules(str(pkg), version, cache_dir=target_dir, expected_sha256=sha)
+        return sha
+
+    rulesync.sync_regulations([reg], "v1", cache_root, downloader=remote_download, cleanup_keep=1)
+    assert (cache_root / reg / "v1").exists()
+
+
+def test_remote_sync_retries_then_success(tmp_path: Path):
+    if rulesync is None:
+        pytest.skip("rulesync 模块不可用")
+
+    cache_root = tmp_path / "rules"
+    reg = "gdpr"
+    pkg, sha = _create_pkg(tmp_path, reg, "v1")
+    calls = {"n": 0}
+
+    def flaky_download(regulation: str, version: str, target_dir: Path):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise rulesync.RulesyncError("timeout")
+        rulesync.sync_rules(str(pkg), version, cache_dir=target_dir, expected_sha256=sha)
+        return sha
+
+    rulesync.sync_regulations([reg], "v1", cache_root, downloader=flaky_download, cleanup_keep=1, retries=2)
+    assert calls["n"] == 3
+    assert (cache_root / reg / "v1").exists()
+
+
+@pytest.mark.parametrize("protocol", ["http", "git", "oci"])
+def test_remote_sync_failure_keeps_cache(tmp_path: Path, protocol: str):
+    if rulesync is None:
+        pytest.skip("rulesync 模块不可用")
+
+    cache_root = tmp_path / "rules"
+    reg = "gdpr"
+    pkg_v1, sha1 = _create_pkg(tmp_path, reg, "v1")
+    rulesync.sync_rules(str(pkg_v1), "v1", cache_dir=cache_root / reg, expected_sha256=sha1)
+
+    calls = {"n": 0}
+
+    def broken_download(regulation: str, version: str, target_dir: Path):
+        calls["n"] += 1
+        raise rulesync.RulesyncError(f"{protocol} down")
+
+    with pytest.raises(rulesync.RulesyncError):
+        rulesync.sync_regulations(
+            [reg],
+            "v2",
+            cache_root,
+            downloader=broken_download,
+            cleanup_keep=1,
+            retries=1,
+        )
+
+    assert calls["n"] == 2
+    assert (cache_root / reg / "v1").exists()
+    assert not (cache_root / reg / "v2").exists()

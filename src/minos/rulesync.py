@@ -196,6 +196,7 @@ def sync_regulations(
     downloader: Optional[Callable[[str, str, Path], str]] = None,
     cleanup_keep: int = 1,
     offline: bool = False,
+    retries: int = 0,
 ) -> None:
     """
     同步多个法规集，默认同步 PRD 法规参考链接中的全部法规。
@@ -204,6 +205,7 @@ def sync_regulations(
     - downloader: 可注入的下载器，签名 downloader(regulation, version, cache_root) -> sha256
     - cleanup_keep: 同步成功后保留的版本数（按法规目录内处理）
     - offline: 离线模式，仅使用已有缓存，缺失则报错
+    - retries: 下载失败的重试次数（默认 0）
     """
     regs = regulations or DEFAULT_REGULATIONS
     cache_root.mkdir(parents=True, exist_ok=True)
@@ -223,12 +225,21 @@ def sync_regulations(
             continue
 
         # 通过注入 downloader 拉取指定法规版本并写入隔离目录
-        try:
-            downloader(reg, version, reg_dir)  # type: ignore[misc]
-        except RulesyncError:
-            raise
-        except Exception as exc:
-            raise RulesyncError(f"同步 {reg} 失败: {exc}") from exc
+        attempts = 0
+        while True:
+            try:
+                downloader(reg, version, reg_dir)  # type: ignore[misc]
+                break
+            except RulesyncError as exc:
+                attempts += 1
+                if attempts > retries:
+                    raise
+                print(f"[rulesync] download failed for {reg}, retry {attempts}/{retries}: {exc}")
+            except Exception as exc:
+                attempts += 1
+                if attempts > retries:
+                    raise RulesyncError(f"同步 {reg} 失败: {exc}") from exc
+                print(f"[rulesync] download failed for {reg}, retry {attempts}/{retries}: {exc}")
 
         if cleanup_keep and cleanup_keep > 0:
             cleanup(reg_dir, keep=cleanup_keep)

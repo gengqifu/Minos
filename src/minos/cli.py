@@ -17,6 +17,12 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("source", help="规则包源（文件路径/git/oci/https），当前支持本地 tar.gz")
     parser.add_argument("version", help="规则版本/标签")
     parser.add_argument(
+        "--regulations",
+        dest="regulations",
+        action="append",
+        help="指定同步的法规集（多值，可选；缺省同步 PRD 法规参考链接中的全部法规）",
+    )
+    parser.add_argument(
         "--sha256",
         dest="sha256",
         help="期望的 SHA256 校验值（可选）",

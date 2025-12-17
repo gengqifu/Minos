@@ -1,150 +1,86 @@
 # Minos
-一个扫描Android APP是否违反特定隐私合规规范的程序
 
-## 使用示例
+一个扫描 Android APP 是否违反特定隐私合规规范的程序，支持源码/APK 静态扫描并输出 HTML/JSON 报告。
 
-### rulesync 同步/回滚/清理
+## 快速开始
 
-- 本地同步规则包（校验 SHA256，并设置激活版本）：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.0.0.tar.gz v1.0.0 --sha256 <digest> --cache-dir ~/.minos/rules
-  ```
-- 离线使用缓存：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.0.0.tar.gz v1.0.0 --sha256 <digest> --cache-dir ~/.minos/rules --offline
-  ```
-- 回滚到指定版本：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.1.0.tar.gz v1.1.0 --cache-dir ~/.minos/rules --rollback-to v1.0.0
-  ```
-- 同步后清理旧版本（仅保留最新 2 个）：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.2.0.tar.gz v1.2.0 --sha256 <digest> --cache-dir ~/.minos/rules --cleanup-keep 2
-  ```
+1) 安装依赖（Python 3.10+）：
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-说明：
-- 成功退出码=0，校验失败=2，其他失败=1。
-- 输出包含同步/回滚结果与当前激活规则路径。
+2) 同步规则（当前实现使用本地规则包；在线同步能力在开发中）：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.0.0.tar.gz v1.0.0 --sha256 <digest> --cache-dir ~/.minos/rules
+```
 
-### 地区→法规选择（映射/手动）
+3) 扫描（源码示例）：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+  --mode source \
+  --input app/src \
+  --output-dir output/reports \
+  --format both \
+  --regions EU --regulations GDPR
+```
 
-- CLI/配置示例：
-  ```json
-  {
-    "regions": ["EU", "US-CA"],
-    "manual_add": ["LGPD"],
-    "manual_remove": []
-  }
-  ```
-- 产出供扫描/报告使用的字段（示意）：
-  ```json
-  {
-    "regions": ["EU", "US-CA"],
-    "regulations": ["CCPA/CPRA", "LGPD"],
-    "source_flags": {
-      "CCPA/CPRA": "region",
-      "LGPD": "manual"
-    },
-    "summary": {
-      "regions": ["EU", "US-CA"],
-      "regulations": ["CCPA/CPRA", "LGPD"]
-    }
-  }
-  ```
+4) 查看报告：`output/reports/scan.html` 与 `output/reports/scan.json`。
 
-### 验收用例（rulesync）
+## 基本原理
 
-- 拉取成功：校验通过，metadata 写入版本/来源/sha256/gpg/时间戳，active=true，退出码=0。  
-- 校验失败：故意传错 sha256，退出码=2，不写入 active 版本。  
-- 离线使用缓存：offline 模式且缓存存在，退出码=0；若缓存不存在则失败。  
-- 回滚：存在多个版本时回滚到上一或指定版本，active 指向目标版本。  
-- 清理缓存：`--cleanup-keep N` 后仅保留最新 N 个版本。  
-- 切换版本：同步新版本激活，旧版本仍在缓存列表。  
-- 缺少输入/源不存在：退出码=1，提示错误。  
-- CLI 摘要输出：包含同步/回滚结果与当前激活路径，便于 CI 收集。
+- 规则数据驱动：规则以 YAML/JSON 管理，可同步/缓存并在扫描时加载。
+- 扫描管线：解析输入（源码/Manifest/APK）→ 匹配规则 → 汇总 findings/stats。
+- 报告输出：生成 HTML+JSON，stdout 输出摘要（风险计数与报告路径）。
 
-### 验收用例（地区→法规映射）
+## 常见使用场景
 
-- 单地区：EU -> 输出 {GDPR}，source_flags=region。  
-- 多地区并集：[EU, US-CA] -> 输出 {GDPR, CCPA/CPRA}，source_flags 对应地区。  
-- 手动添加/移除：在映射结果上 add/remove，最终集合与 source_flags=manual 准确。  
-- 配置读取：JSON config 读写一致（regions/manual_add/manual_remove），非法配置报错。  
-- 无效输入：非法地区抛出明确错误；缺省输入需提示。  
-- 输出字段：包含 regions/regulations/source_flags/summary，供扫描器/报告使用。
+### 本地运行（源码/APK）
+- 源码扫描：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+  --mode source --input app/src --output-dir output/reports --format both
+```
+- APK 扫描：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+  --mode apk --apk-path app-release.apk --output-dir output/reports --format json
+```
 
-### 验收用例（Manifest 扫描）
+### 容器运行
+- 参考 `containers/README.md`。
 
-- 敏感权限命中：包含 ACCESS_FINE_LOCATION 命中对应规则，source 透传。  
-- 导出组件命中：exported=true 的 activity/service/provider 未保护时命中，source 透传。  
-- 未命中：合规配置下 findings 为空，stats 为零。  
-- 规则缺失/非法规则：给出清晰错误或空结果，退出码/日志符合预期。  
-- 非法 manifest：解析失败抛出 ManifestScanError，退出码非零。  
-- stats：按 regulation/severity 汇总计数，与 findings 对应。
+### CI 集成
+- 参考 `ci/README.md`（GitHub Actions/GitLab CI 示例）。
 
-### 例行命令（Manifest 扫描示例）
+## 规则同步（rulesync）
 
-- 直接扫描 manifest 文件：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'PERM_SENSITIVE_LOCATION','type':'permission','pattern':'android.permission.ACCESS_FINE_LOCATION','regulation':'PIPL','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('AndroidManifest.xml'), rules, {'PERM_SENSITIVE_LOCATION':'region'}))"
-  ```
-- 扫描目录（自动查找 AndroidManifest.xml，含 src/main）：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'EXPORTED_ACTIVITY','type':'component','component':'activity','regulation':'GDPR','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('app'), rules, {'EXPORTED_ACTIVITY':'region'}))"
-  ```
-- 扫描 APK（读取包内 manifest，假设可解析 XML）：
-  ```bash
-  PYTHONPATH=src .venv/bin/python -c "from minos import manifest_scanner; from pathlib import Path; import json; rules=[{'rule_id':'EXPORTED_ACTIVITY','type':'component','component':'activity','regulation':'GDPR','severity':'high'}]; print(manifest_scanner.scan_manifest(Path('app-release.apk'), rules, {'EXPORTED_ACTIVITY':'region'}))"
-  ```
+- **离线缓存**：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.0.0.tar.gz v1.0.0 \
+  --sha256 <digest> --cache-dir ~/.minos/rules --offline
+```
+- **回滚/清理**：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.1.0.tar.gz v1.1.0 \
+  --cache-dir ~/.minos/rules --rollback-to v1.0.0
 
-### 容器运行（占位示例）
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.2.0.tar.gz v1.2.0 \
+  --sha256 <digest> --cache-dir ~/.minos/rules --cleanup-keep 2
+```
+- **在线同步（规划中）**：PRD 要求支持按法规子集同步与法规隔离缓存；当前实现仍使用本地规则包路径。
 
-- 入口脚本：`containers/entrypoint.sh`（默认调用 `python -m minos.cli`）。  
-- 运行示例：
-  ```bash
-  docker run --rm \
-    -v "$PWD":/work -w /work \
-    -v "$HOME/.minos/rules":/root/.minos/rules \
-    minos:latest \
-    minos scan --mode apk --apk-path app-release.apk --output-dir output/reports
-  ```
-- 受限/无网：提前在宿主机执行 rulesync 缓存规则，再挂载 `~/.minos/rules` 供容器使用。  
+## 报告与输出
 
-### 本地运行 CLI 扫描（示例）
+- 输出目录默认：`output/reports`（可用 `--output-dir` 覆盖）。
+- 输出格式：`--format html|json|both`。
+- 日志：`--log-file output/logs/scan.log` 可输出文件日志。
 
-- 安装依赖后（如使用 `.venv`）：  
-  ```bash
-  PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-    --mode source \
-    --input app/src \
-    --output-dir output/reports \
-    --format both \
-    --regions EU --regulations GDPR
-  ```
-- APK 模式：  
-  ```bash
-  PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-    --mode apk \
-    --apk-path app-release.apk \
-    --output-dir output/reports \
-    --format json
-  ```
-- 行为与容器运行一致：报告路径/格式、stdout 摘要字段相同；缺少输入时返回非零并提示。
-- 输出路径：默认写入 `output/reports/{scan.json,scan.html}`（可通过 `--output-dir`/`--report-name` 覆盖）；日志可选 `--log-file`（支持轮转）。
-- 受限网络提示：提前执行 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 缓存规则，再在离线环境使用。
+## 相关文档
 
-### CI 工作流示例
-
-- GitHub Actions：参考 `ci/github-actions/minos-scan.yml`，包含本地 Python 运行与容器运行两种作业，输出报告/日志工件。可复制到目标仓库的 `.github/workflows/` 并根据项目路径调整 `--input/--apk-path/--format`、输出目录、缓存参数等。
-- GitLab CI：参考 `ci/gitlab-ci/minos-scan.yml`，包含 `scan_local`（python:3.10-slim）与 `scan_container`（docker dind）两个 job，使用 `cache` 缓存规则目录 `${MINOS_RULE_CACHE}`，并通过 `artifacts` 收集 `${MINOS_OUTPUT_DIR}/*.json|*.html` 与 `${MINOS_LOG_DIR}/*.log`。可在 `.gitlab-ci.yml` include 或复制后按需删除不需要的 job。
-- 迁移提示：目标仓库需具备 `requirements.txt`、`containers/Dockerfile`（如使用容器作业）以及扫描输入路径（示例使用 `tests`、`ci/fixtures/dummy.apk`）；如不需要容器作业可删除对应 job。触发事件、地区/法规参数与 artifact 路径可按需修改。
-- 可调参数示例：通过 env 修改 `MINOS_INPUT_SRC`（源码目录）、`MINOS_APK_PATH`（APK 路径）、`MINOS_REGIONS`/`MINOS_REGULATIONS`（地区/法规）、`MINOS_OUTPUT_DIR`/`MINOS_LOG_DIR`（输出/日志目录）、`MINOS_LOG_LEVEL`、`MINOS_FORMAT_LOCAL`/`MINOS_FORMAT_CONTAINER`（报告格式）以及 `MINOS_RULE_CACHE`（规则缓存目录）。
-- 工件上传：workflow 已包含 `actions/upload-artifact`，分别上传本地作业与容器作业的 HTML/JSON 报告与日志（默认 artifact 名称为 `minos-scan-local`、`minos-scan-container`），路径与 env 中的输出目录保持一致。
-- 受限/离线：提前 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 准备规则缓存，在 CI 中挂载或缓存 `MINOS_RULE_CACHE` 目录，不依赖在线下载。
-- 详细说明：见 `ci/README.md`，包含目录结构、参数与缓存配置、依赖要求、本地验证方法与离线提示。
-
-### rulesync 在线同步与法规子集
-
-- 命令：`minos rulesync <source> <version> --sha256 <digest> --cache-dir ~/.minos/rules --regulations gdpr --regulations ccpa`（默认无 `--regulations` 同步 PRD 法规参考链接中的全部法规集）。  
-- 缓存结构：按法规隔离 `~/.minos/rules/<regulation>`，仅保留最新版本覆盖旧版，metadata 记录来源/版本/校验结果/安装时间/active 标记。  
-- 离线模式：`--offline` 使用已有缓存，缺失目标法规时返回非零并提示；在线同步失败不覆盖已有缓存。  
-- 版本校验：支持 `--sha256` 校验（预留 GPG），失败退出码非零并保留失败日志。
+- CI 示例与推荐流程：`ci/README.md`
+- 容器使用说明：`containers/README.md`
+- 动态检测预研（接口/样例）：`docs/dynamic-prestudy.md`
+- 变更记录：`CHANGELOG.md`
+- 验收用例与详细测试清单：`docs/acceptance.md`

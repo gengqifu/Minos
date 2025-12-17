@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
@@ -39,6 +40,14 @@ def _download_http(source: str, dest: Path, timeout: int = 30) -> None:
     try:
         with urllib.request.urlopen(source, timeout=timeout) as resp, dest.open("wb") as out:
             shutil.copyfileobj(resp, out)
+    except urllib.error.HTTPError as exc:  # pragma: no cover - 依赖外部网络
+        raise RulesyncError(f"HTTP 下载失败: {exc.code} {exc.reason}") from exc
+    except urllib.error.URLError as exc:  # pragma: no cover - 依赖外部网络
+        if isinstance(exc.reason, TimeoutError):
+            raise RulesyncError("HTTP 下载超时") from exc
+        raise RulesyncError(f"HTTP 下载失败: {exc}") from exc
+    except TimeoutError as exc:  # pragma: no cover - 依赖外部网络
+        raise RulesyncError("HTTP 下载超时") from exc
     except Exception as exc:  # pragma: no cover - 依赖外部网络
         raise RulesyncError(f"HTTP 下载失败: {exc}") from exc
 
@@ -54,7 +63,7 @@ def _parse_source_with_path(source: str) -> tuple[str, Optional[str]]:
     return base, path
 
 
-def _download_git(source: str, dest: Path) -> None:
+def _download_git(source: str, dest: Path, timeout: int = 60) -> None:
     base, path = _parse_source_with_path(source)
     repo_url = base[len("git+") :]
     rel_path = Path(path) if path else Path("rules.tar.gz")
@@ -67,9 +76,12 @@ def _download_git(source: str, dest: Path) -> None:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                timeout=timeout,
             )
         except FileNotFoundError as exc:
             raise RulesyncError("未找到 git 命令，请先安装 git") from exc
+        except subprocess.TimeoutExpired as exc:
+            raise RulesyncError("git 拉取超时") from exc
         except subprocess.CalledProcessError as exc:
             raise RulesyncError(f"git 拉取失败: {exc.stderr.strip()}") from exc
 
@@ -84,7 +96,7 @@ def _download_git(source: str, dest: Path) -> None:
             shutil.copyfile(target, dest)
 
 
-def _download_oci(source: str, dest: Path) -> None:
+def _download_oci(source: str, dest: Path, timeout: int = 60) -> None:
     base, path = _parse_source_with_path(source)
     ref = base.replace("oci://", "", 1).replace("oci+", "", 1)
     if not shutil.which("oras"):
@@ -99,7 +111,10 @@ def _download_oci(source: str, dest: Path) -> None:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                timeout=timeout,
             )
+        except subprocess.TimeoutExpired as exc:
+            raise RulesyncError("OCI 拉取超时") from exc
         except subprocess.CalledProcessError as exc:
             raise RulesyncError(f"OCI 拉取失败: {exc.stderr.strip()}") from exc
         rel_path = Path(path) if path else None
@@ -115,15 +130,15 @@ def _download_oci(source: str, dest: Path) -> None:
         shutil.copyfile(candidates[0], dest)
 
 
-def _prepare_remote_source(source: str, tmpdir: Path) -> Path:
+def _prepare_remote_source(source: str, tmpdir: Path, timeout: int) -> Path:
     tmpdir.mkdir(parents=True, exist_ok=True)
     dest = tmpdir / "rules.tar.gz"
     if source.startswith(("http://", "https://")):
-        _download_http(source, dest)
+        _download_http(source, dest, timeout=timeout)
     elif source.startswith("git+"):
-        _download_git(source, dest)
+        _download_git(source, dest, timeout=timeout)
     elif source.startswith(("oci://", "oci+")):
-        _download_oci(source, dest)
+        _download_oci(source, dest, timeout=timeout)
     else:
         raise RulesyncError(f"不支持的远端协议: {source}")
     return dest
@@ -169,6 +184,7 @@ def sync_rules(
     expected_sha256: Optional[str] = None,
     gpg_key: Optional[str] = None,
     offline: bool = False,
+    download_timeout: int = 30,
 ) -> Path:
     """
     从受控仓库拉取规则包、校验并写入缓存目录，返回激活版本路径。
@@ -221,7 +237,7 @@ def sync_rules(
 
     if _is_remote_source(source):
         with tempfile.TemporaryDirectory() as tmpdir:
-            source_path = _prepare_remote_source(source, Path(tmpdir))
+            source_path = _prepare_remote_source(source, Path(tmpdir), timeout=download_timeout)
             return _sync_from_path(source_path)
 
     return _sync_from_path(Path(source))

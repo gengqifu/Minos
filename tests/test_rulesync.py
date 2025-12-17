@@ -1,5 +1,6 @@
 import hashlib
 import json
+import shutil
 import tarfile
 import tempfile
 from pathlib import Path
@@ -258,6 +259,30 @@ def test_cleanup_keeps_latest_versions(tmp_path: Path):
 
     versions = set(rulesync.list_versions(cache_dir))
     assert versions == {"v1.1.0", "v1.2.0"}
+
+
+def test_sync_rules_http_timeout_passthrough(monkeypatch, tmp_path: Path):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    pkg_path, sha256 = _create_rules_pkg(tmp_path, "v1.0.0")
+    seen = {}
+
+    def fake_download_http(source: str, dest: Path, timeout: int = 30) -> None:
+        seen["timeout"] = timeout
+        shutil.copyfile(pkg_path, dest)
+
+    monkeypatch.setattr(rulesync, "_download_http", fake_download_http)
+
+    active_path = rulesync.sync_rules(
+        source="https://example.com/rules.tar.gz",
+        version="v1.0.0",
+        cache_dir=cache_dir,
+        expected_sha256=sha256,
+        download_timeout=11,
+    )
+
+    assert active_path.exists()
+    assert seen["timeout"] == 11
 
 
 def test_get_active_path_returns_current(tmp_path: Path):

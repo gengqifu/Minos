@@ -50,6 +50,12 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         help="失败重试次数（默认 0）",
     )
     parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="下载超时（秒，默认 30）",
+    )
+    parser.add_argument(
         "--rollback-to",
         dest="rollback_to",
         help="回滚到指定版本（可选）",
@@ -234,6 +240,7 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
                 expected_sha256=args.sha256,
                 gpg_key=args.gpg_key,
                 offline=args.offline,
+                download_timeout=args.timeout,
             )
             if args.cleanup_keep:
                 rulesync.cleanup(cache_dir, keep=args.cleanup_keep)

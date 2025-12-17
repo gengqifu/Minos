@@ -42,6 +42,45 @@ docker run --rm \
   ```
   说明：默认无 `--regulations` 同步 PRD 法规参考链接中的全部法规；缓存按 `/root/.minos/rules/<regulation>` 隔离，仅保留最新版本。  
 
+远端 source 示例与注意事项：
+- HTTP 规则包（容器内可直接下载）：  
+  ```bash
+  docker run --rm \
+    -v "$PWD":/work -w /work \
+    -v "$HOME/.minos/rules":/root/.minos/rules \
+    minos:latest \
+    minos rulesync https://example.com/rules.tar.gz v1.0.0 \
+      --sha256 <digest> --cache-dir /root/.minos/rules
+  ```
+- git/OCI 规则包：镜像内需安装 `git` 或 `oras`。默认镜像未包含这两个工具，建议自定义镜像扩展：  
+  ```dockerfile
+  FROM minos:latest
+  RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
+      rm -rf /var/lib/apt/lists/*
+  # 若需 OCI：安装 oras（根据环境下载对应版本）
+  ```
+  使用示例：  
+  ```bash
+  docker run --rm \
+    -v "$PWD":/work -w /work \
+    -v "$HOME/.minos/rules":/root/.minos/rules \
+    minos:latest \
+    minos rulesync git+https://example.com/rules.git#path=dist/rules.tar.gz v1.0.0 \
+      --cache-dir /root/.minos/rules
+
+  docker run --rm \
+    -v "$PWD":/work -w /work \
+    -v "$HOME/.minos/rules":/root/.minos/rules \
+    minos:latest \
+    minos rulesync oci://example.com/minos/rules:1.0.0#path=rules.tar.gz v1.0.0 \
+      --cache-dir /root/.minos/rules
+  ```
+  说明：`#path=` 用于指定制品内的 tar.gz 路径；未指定时要求制品中只有一个 tar.gz。  
+
+网络/证书建议：
+- 受限网络请配置代理（可通过 Dockerfile 的 `HTTP_PROXY/HTTPS_PROXY/NO_PROXY` build args 或运行时环境变量）。  
+- HTTPS 依赖系统 CA 证书，若访问自签证书需在镜像中注入 CA。  
+
 输出目录挂载与权限：
 - 推荐挂载宿主目录到容器 `/work/output`（或自定义）以便保存报告/日志：`-v "$PWD/output":/work/output`。  
 - CLI `--output-dir` 默认为 `output/reports`（相对工作目录），保持与本地一致；确保宿主挂载目录可写。  

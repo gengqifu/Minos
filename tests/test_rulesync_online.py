@@ -112,3 +112,29 @@ def test_offline_without_cache_raises(tmp_path: Path):
             downloader=None,
             offline=True,
         )
+
+
+def test_sync_overwrites_old_version_and_keeps_latest(tmp_path: Path):
+    if rulesync is None:
+        pytest.skip("rulesync 模块不可用")
+
+    cache_root = tmp_path / "rules"
+    reg = "gdpr"
+    pkg_v1, sha1 = _create_pkg(tmp_path, reg, "v1")
+    pkg_v2, sha2 = _create_pkg(tmp_path, reg, "v2")
+
+    def download_v1(regulation: str, version: str, target_dir: Path):
+        rulesync.sync_rules(str(pkg_v1), version, cache_dir=target_dir, expected_sha256=sha1)
+        return sha1
+
+    rulesync.sync_regulations([reg], "v1", cache_root, downloader=download_v1)
+    assert (cache_root / reg / "v1").exists()
+
+    def download_v2(regulation: str, version: str, target_dir: Path):
+        rulesync.sync_rules(str(pkg_v2), version, cache_dir=target_dir, expected_sha256=sha2)
+        return sha2
+
+    # 默认 cleanup_keep=1，仅保留最新 v2
+    rulesync.sync_regulations([reg], "v2", cache_root, downloader=download_v2)
+    assert not (cache_root / reg / "v1").exists()
+    assert (cache_root / reg / "v2").exists()

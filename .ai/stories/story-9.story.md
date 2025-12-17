@@ -87,5 +87,7 @@ Story Points: 2
 - Assistant: 添加 sync_regulations（按法规隔离落地、覆盖旧版、默认法规列表）并勾选 3.2
 - User: 执行任务3.3  
 - Assistant: 完成离线缺少缓存的失败校验并勾选 3.3
+- User: 执行任务4.1  
+- Assistant: 强化按法规缓存目录和仅保留最新版本的测试，准备勾选 4.1
 - User: 标记任务3完成  
 - Assistant: 标记 Story-9 任务 3 完成

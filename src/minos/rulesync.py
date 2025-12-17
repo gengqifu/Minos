@@ -194,7 +194,7 @@ def sync_regulations(
     version: str,
     cache_root: Path,
     downloader: Optional[Callable[[str, str, Path], str]] = None,
-    cleanup_keep: Optional[int] = None,
+    cleanup_keep: int = 1,
     offline: bool = False,
 ) -> None:
     """

@@ -141,3 +141,10 @@
 - 工件上传：workflow 已包含 `actions/upload-artifact`，分别上传本地作业与容器作业的 HTML/JSON 报告与日志（默认 artifact 名称为 `minos-scan-local`、`minos-scan-container`），路径与 env 中的输出目录保持一致。
 - 受限/离线：提前 `minos rulesync ... --cache-dir ~/.minos/rules --offline` 准备规则缓存，在 CI 中挂载或缓存 `MINOS_RULE_CACHE` 目录，不依赖在线下载。
 - 详细说明：见 `ci/README.md`，包含目录结构、参数与缓存配置、依赖要求、本地验证方法与离线提示。
+
+### rulesync 在线同步与法规子集
+
+- 命令：`minos rulesync <source> <version> --sha256 <digest> --cache-dir ~/.minos/rules --regulations gdpr --regulations ccpa`（默认无 `--regulations` 同步 PRD 法规参考链接中的全部法规集）。  
+- 缓存结构：按法规隔离 `~/.minos/rules/<regulation>`，仅保留最新版本覆盖旧版，metadata 记录来源/版本/校验结果/安装时间/active 标记。  
+- 离线模式：`--offline` 使用已有缓存，缺失目标法规时返回非零并提示；在线同步失败不覆盖已有缓存。  
+- 版本校验：支持 `--sha256` 校验（预留 GPG），失败退出码非零并保留失败日志。

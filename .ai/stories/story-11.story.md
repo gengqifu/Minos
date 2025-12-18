@@ -68,3 +68,10 @@ Story Points: 2
 - 开启 `--allow-local-sources` 导入本地规则包：退出码=0，metadata.source_url 标记为本地，缓存落地并激活。  
 - 开启 `--allow-custom-sources` 同步非白名单 URL：退出码=0，metadata.source_url=自定义 URL，缓存落地并激活。  
 - 参数值大小写混用（如 `--regulation GDPR`）：仍匹配映射并成功，缓存路径使用小写规约。  
+
+### Assertions（对应 1.2）
+- 退出码：成功场景=0，拒绝/未映射/未开关等错误场景非零；stderr 包含原因关键词（非白名单/需 allow-custom-sources、本地需 allow-local-sources、未映射需自定义源）。  
+- stdout：成功时输出同步的法规列表与缓存路径，regulation 名统一小写；失败时不输出成功摘要。  
+- metadata：成功时包含 version（默认值或用户值）、source_url（填充/用户/本地标记）、installed_at（ISO8601）、active=true；失败场景不生成 metadata。  
+- 缓存目录：成功时 `~/.minos/rules/<reg>/<ver>/rules.yaml` 存在且 <reg> 为小写；失败场景不创建目录/文件。  
+- 大小写不敏感：输入 `--regulation GDPR`、`--version V1` 仍按小写落地路径与 metadata，且匹配默认 URL。  

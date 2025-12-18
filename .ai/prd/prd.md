@@ -117,7 +117,7 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
 - 缓存与落地：不同法规集在本地以隔离的规则集存储和命名（`~/.minos/rules/<regulation>`），互不覆盖，可并行存在，仅保留最新版本（覆盖旧版本）。
 - 适配器扩展：适配器遵循开闭原则，通过接口与注册发现机制扩展站点支持，新增站点无需修改通用框架核心逻辑。
 - **首版约束**：仅提供单一入口 `rulesync` 执行“在线拉取（PRD 白名单）→转换→写入缓存/激活”全流程，不对外暴露独立转换命令；默认禁止本地文件/自定义源。
-- `rulesync --from-url --regulation <reg> [--version <ver>]`：参数均可选。未提供 URL 时按法规映射自动填充 PRD 默认链接；未提供 regulation 时默认同步“法规参考链接”中列出的全部法规；`--version` 可选（不填使用默认标识）。
+- `rulesync --from-url --regulation <reg> [--version <ver>]`：参数均可选。未提供 URL 时按法规映射自动填充 PRD 默认链接；未提供 regulation 时默认同步“法规参考链接”中列出的全部法规；`--version` 可选（不填使用默认标识）。命令参数值不区分大小写（regulation/regions 等统一按小写解析）。
 - PRD 默认 URL 映射：gdpr→<https://eur-lex.europa.eu/eli/reg/2016/679/oj>；ccpa/cpra→<https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5>；lgpd→<https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/L13709.htm>；pipl→<https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm>；appi→<https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/>。未收录法规且未提供 URL 时直接报错。
 - 开关（仅受控环境）：`--allow-local-sources` 放开本地文件/导入 YAML，`--allow-custom-sources` 放开非白名单在线源；默认关闭并给出警示。
 

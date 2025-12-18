@@ -48,7 +48,7 @@ flowchart TD
 
 ### 规则同步（单一入口 + 默认 URL 映射）
 
-- CLI 入口：`rulesync --from-url --regulation <reg> [--version <ver>]`，参数可选；未给 URL 按法规自动填充 PRD “法规参考链接”默认地址（gdpr/ccpa-cpra/lgpd/pipl/appi），未给 regulation 时默认同步 PRD 列出的全部法规，仅白名单域名。  
+- CLI 入口：`rulesync --from-url --regulation <reg> [--version <ver>]`，参数可选且值不区分大小写；未给 URL 按法规自动填充 PRD “法规参考链接”默认地址（gdpr/ccpa-cpra/lgpd/pipl/appi），未给 regulation 时默认同步 PRD 列出的全部法规，仅白名单域名。  
 - 安全默认：本地文件/导入 YAML/非白名单源默认禁用；需显式 `--allow-local-sources` 或 `--allow-custom-sources` 才放开，打印警示。  
 - 存储结构：按法规与版本隔离 `~/.minos/rules/<regulation>/<version>/rules.yaml + metadata.json`，版本激活指针记录当前生效版本。`--version` 可选，未提供使用默认标识。  
 - 流程：下载→站点适配器转换为 YAML（内部模块，不对外暴露独立命令）→ 写入缓存与 metadata → 激活；支持离线模式使用已缓存版本，校验 SHA256/可选签名。

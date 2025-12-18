@@ -22,14 +22,14 @@ Story Points: 2
 ## Tasks
 
 1. - [ ] 设计测试用例（TDD 先行）  
-   - [ ] 1.1 场景覆盖：省略 URL 自动填充成功（reg=gdpr 等）；未映射法规报错；非白名单 URL 拒绝；本地/自定义源未开关时拒绝；开启 `--allow-local-sources`/`--allow-custom-sources` 后成功；version 未传时默认值写入校验；缓存落地与激活检查。  
-   - [ ] 1.2 断言：stdout/stderr 文案、退出码；metadata（version/source_url/installed_at/active）；缓存目录结构；白名单/开关警示信息。  
+   - [ ] 1.1 场景覆盖：省略 URL 自动填充成功（reg=gdpr 等）；未映射法规报错；非白名单 URL 拒绝；本地/自定义源未开关时拒绝；开启 `--allow-local-sources`/`--allow-custom-sources` 后成功；version 未传时默认值写入校验；缓存落地与激活检查；参数值大小写混用仍能匹配（不区分大小写）。  
+   - [ ] 1.2 断言：stdout/stderr 文案、退出码；metadata（version/source_url/installed_at/active）；缓存目录结构；白名单/开关警示信息；参数值大小写归一处理验证。  
 
 2. - [ ] 实现测试用例  
    - [ ] 2.1 根据 1.x 设计编写并落地自动化测试，覆盖成功/失败/开关/默认版本场景。  
 
 3. - [ ] 功能实现  
-   - [ ] 3.1 CLI：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，参数可选；未给 URL 按映射填充（默认 PRD 白名单），未给 regulation 默认同步 PRD 列出的全部法规。  
+   - [ ] 3.1 CLI：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，参数可选且值不区分大小写；未给 URL 按映射填充（默认 PRD 白名单），未给 regulation 默认同步 PRD 列出的全部法规。  
    - [ ] 3.2 流程：下载→转换→写入缓存/metadata→激活；内部调用转换模块但不对外暴露独立命令；version 可选默认值写入缓存与 metadata 一致。  
 
 4. - [ ] 文档与验收  

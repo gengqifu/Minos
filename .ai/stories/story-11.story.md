@@ -32,7 +32,7 @@ Story Points: 2
    - [x] 3.1 CLI：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，参数可选且值不区分大小写；未给 URL 按映射填充（默认 PRD 白名单），未给 regulation 默认同步 PRD 列出的全部法规。  
    - [x] 3.2 流程：下载→转换→写入缓存/metadata→激活；内部调用转换模块但不对外暴露独立命令；version 可选默认值写入缓存与 metadata 一致。  
 
-4. - [ ] 文档与验收  
+4. - [x] 文档与验收  
    - [x] 4.1 运行并通过 1.x 的测试用例，验证失败路径与警示文案符合设计。  
    - [x] 4.2 更新 README / CI / 容器文档：仅展示 `rulesync --from-url` 单步用法（URL 可省略），说明默认限制、映射表、开关行为。  
    - [x] 4.3 更新 PRD/变更记录：记录默认 URL 映射、version 可选、单一入口与禁用本地/自定义源的约束。  

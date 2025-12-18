@@ -42,7 +42,7 @@ Story Points: 2
    - [x] 4.1 GDPR（eur-lex）适配  
    - [x] 4.2 CCPA/CPRA（leginfo）适配  
    - [x] 4.3 LGPD（planalto）适配  
-   - [ ] 4.4 PIPL（epicor）适配  
+   - [x] 4.4 PIPL（epicor）适配  
    - [ ] 4.5 APPI（ppc）适配  
 5. - [ ] 文档与验收  
    - [ ] 5.1 README/使用说明补充“法规文档转换”示例  

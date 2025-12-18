@@ -55,9 +55,10 @@ def test_unknown_regulation_fails(tmp_path: Path):
     path = tmp_path / "unknown.html"
     path.write_text(html, encoding="utf-8")
 
-    rulesync_convert.extract_rules_from_file(
-        path=path,
-        source_url="https://example.com/unknown",
+    with pytest.raises(rulesync_convert.RulesyncConvertError):
+        rulesync_convert.extract_rules_from_file(
+            path=path,
+            source_url="https://example.com/unknown",
             regulation="unknown-law",
         )
 

@@ -24,15 +24,6 @@ Story Points: 2
 1. - [ ] 设计测试用例（TDD 先行）  
    - [x] 1.1 场景覆盖：省略 URL 自动填充成功（reg=gdpr 等）；未映射法规报错；非白名单 URL 拒绝；本地/自定义源未开关时拒绝；开启 `--allow-local-sources`/`--allow-custom-sources` 后成功；version 未传时默认值写入校验；缓存落地与激活检查；参数值大小写混用仍能匹配（不区分大小写）。  
    - [ ] 1.2 断言：stdout/stderr 文案、退出码；metadata（version/source_url/installed_at/active）；缓存目录结构；白名单/开关警示信息；参数值大小写归一处理验证。  
-   - [ ] 1.3 具体用例清单（输入/期望）：
-      - 缺省 URL + regulation=gdpr：自动填充 GDPR 链接，退出码=0，metadata.source_url=GDPR URL，版本写入默认值，缓存落地并激活。
-      - 缺省 regulation（同步全部）：按 PRD 链接列表逐个同步，至少生成 gdpr/ccpa/lgpd/pipl/appi 的缓存目录，全部退出码=0。
-      - 未映射法规 reg=unknown 且无 URL：退出码非零，stderr 提示需自定义源，metadata/缓存不生成。
-      - 非白名单 URL：退出码非零，stderr 提示需 `--allow-custom-sources`，无缓存落地。
-      - 本地文件（file:// 或路径）无开关：退出码非零，stderr 提示需 `--allow-local-sources`。
-      - 开启 `--allow-local-sources` 导入本地规则包：退出码=0，metadata.source_url 标记为本地，缓存落地并激活。
-      - 开启 `--allow-custom-sources` 同步非白名单 URL：退出码=0，metadata.source_url=自定义 URL，缓存落地并激活。
-      - 参数值大小写混用（如 `--regulation GDPR`）：仍匹配映射并成功，缓存路径使用小写规约。
 
 2. - [ ] 实现测试用例  
    - [ ] 2.1 根据 1.x 设计编写并落地自动化测试，覆盖成功/失败/开关/默认版本场景。  
@@ -66,3 +57,14 @@ Story Points: 2
 - 默认版本标识可考虑 `latest` 或日期戳（需在任务中确定并统一）。  
 - 错误提示需指明开启开关的后果（仅受控环境）。  
 - 内部转换仍复用现有适配器，但不在文档对外暴露。
+
+## Test Plan
+
+- 缺省 URL + regulation=gdpr：自动填充 GDPR 链接，退出码=0，metadata.source_url=GDPR URL，版本写入默认值，缓存落地并激活。  
+- 缺省 regulation（同步全部）：按 PRD 链接列表逐个同步，生成 gdpr/ccpa/lgpd/pipl/appi 缓存目录，全部退出码=0。  
+- 未映射法规 reg=unknown 且无 URL：退出码非零，stderr 提示需自定义源，metadata/缓存不生成。  
+- 非白名单 URL：退出码非零，stderr 提示需 `--allow-custom-sources`，无缓存落地。  
+- 本地文件（file:// 或路径）无开关：退出码非零，stderr 提示需 `--allow-local-sources`。  
+- 开启 `--allow-local-sources` 导入本地规则包：退出码=0，metadata.source_url 标记为本地，缓存落地并激活。  
+- 开启 `--allow-custom-sources` 同步非白名单 URL：退出码=0，metadata.source_url=自定义 URL，缓存落地并激活。  
+- 参数值大小写混用（如 `--regulation GDPR`）：仍匹配映射并成功，缓存路径使用小写规约。  

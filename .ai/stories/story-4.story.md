@@ -24,7 +24,7 @@ Story Points: 2
 1. - [x] 设计测试用例（TDD 先行）  
    - [x] 1.1 覆盖：已知追踪/广告 SDK 命中、敏感 API 命中、可疑域名/字符串命中、未命中、规则缺失、映射来源标记透传  
    - [x] 1.2 断言：命中列表（rule_id、法规、来源标记）、位置（文件/类/行）、严重级别、退出码与日志  
-   - [ ] 1.3 覆盖：YAML 规则加载/禁用/覆盖/兜底关闭的设计用例  
+   - [x] 1.3 覆盖：YAML 规则加载/禁用/覆盖/兜底关闭的设计用例  
 2. - [x] 实现测试用例（自动化）  
    - [x] 2.1 编写 SDK/API/字符串扫描的测试用例，覆盖命中/未命中/规则缺失等场景（已添加 xfail 骨架测试，等待实现）  
    - [x] 2.2 支持本地与 CI 运行，验证退出码与日志内容（pytest -q 已集成，当前 4 个 xfail 等待实现）  
@@ -144,6 +144,11 @@ flowchart TD
 - 规则缺失/加载失败：给出清晰错误或退出码，不默默失败。  
 - 来源标记：findings 中 source 与映射结果一致（region/manual）。  
 - 输出字段：findings 包含 rule_id/regulation/source/location/evidence/recommendation/severity；stats 按 severity/regulation 汇总。
+- YAML 驱动场景：  
+  - 成功：从 YAML 加载 SDK/API/字符串规则命中；硬编码兜底可禁用。  
+  - 禁用：规则 disabled/skip 后不命中，stats 不计数。  
+  - 覆盖：同 rule_id 的本地 YAML 覆盖内置规则（severity/source/evidence 等），命中后以覆盖值为准。  
+  - 兜底关闭：关闭硬编码兜底时仅执行 YAML 规则，未加载规则时报错并有日志提示。  
 
 ## Assertions (for tests)
 

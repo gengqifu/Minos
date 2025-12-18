@@ -140,6 +140,33 @@ def test_findings_fields_and_stats(tmp_path: Path):
     assert stats["count_by_regulation"].get("GDPR", 0) >= 1
 
 
+def test_rule_source_precedence(tmp_path: Path):
+    manifest = """
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+      <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    </manifest>
+    """
+    manifest_path = _write_manifest(tmp_path, manifest)
+    # 规则自带 source=manual
+    rules = [
+        _make_rule(
+            "PERM_SENSITIVE_LOCATION",
+            "permission",
+            pattern="android.permission.ACCESS_FINE_LOCATION",
+            regulation="PIPL",
+            severity="high",
+            source="manual",
+        )
+    ]
+    findings, _ = manifest_scanner.scan_manifest(manifest_path, rules, source_flags={})
+    assert findings and findings[0]["source"] == "manual"
+    # source_flags 优先覆盖规则内 source
+    findings2, _ = manifest_scanner.scan_manifest(
+        manifest_path, rules, source_flags={"PERM_SENSITIVE_LOCATION": "region"}
+    )
+    assert findings2 and findings2[0]["source"] == "region"
+
+
 @pytest.mark.xfail(reason="待实现 YAML 规则禁用/覆盖逻辑")
 def test_disabled_rule_should_not_hit(tmp_path: Path):
     manifest = """

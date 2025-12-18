@@ -163,9 +163,15 @@ def scan_manifest(
         elif rtype == "component":
             findings.extend(_match_components(root, rule))
 
-    # 添加来源标记
+    # 来源标记：source_flags 优先，其次规则自带 source，默认 region
+    source_map: Dict[str, str] = dict(source_flags)
+    for rule in active_rules:
+        rid = rule.get("rule_id")
+        if rid and rid not in source_map and rule.get("source"):
+            source_map[rid] = rule.get("source")
+
     for f in findings:
-        f["source"] = source_flags.get(f["rule_id"], "region")
+        f["source"] = source_map.get(f["rule_id"], "region")
 
     # 统计
     stats: Dict[str, Any] = {"count_by_regulation": {}, "count_by_severity": {}}

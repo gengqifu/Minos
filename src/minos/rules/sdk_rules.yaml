@@ -3,13 +3,28 @@
   pattern: com.example.tracker
   regulation: GDPR
   severity: medium
+- rule_id: SDK_FIREBASE_ANALYTICS
+  type: sdk
+  pattern: com.google.firebase.analytics
+  regulation: GDPR
+  severity: medium
 - rule_id: API_ID_ACCESS
   type: api
   pattern: getDeviceId
   regulation: PIPL
   severity: high
+- rule_id: API_AD_ID
+  type: api
+  pattern: getAdvertisingId
+  regulation: CCPA
+  severity: medium
 - rule_id: STRING_SUSPICIOUS_DOMAIN
   type: string
   pattern: tracker.example.com
   regulation: LGPD
+  severity: medium
+- rule_id: STRING_BEACON_PIXEL
+  type: string
+  pattern: facebook.com/tr
+  regulation: GDPR
   severity: medium

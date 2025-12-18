@@ -38,7 +38,22 @@ def _match_rule(content: bytes, rule: Dict[str, Any]) -> bool:
     return pattern.encode(errors="ignore") in content
 
 
+def _normalize_rules(rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """支持 disabled，后出现的同 rule_id 覆盖前者（用于兜底规则 + 本地覆盖合并）。"""
+    normalized: Dict[str, Dict[str, Any]] = {}
+    for r in rules:
+        rid = r.get("rule_id")
+        if not rid:
+            continue
+        if r.get("disabled") is True:
+            normalized[rid] = {"disabled": True}
+            continue
+        normalized[rid] = r
+    return [r for r in normalized.values() if not r.get("disabled")]
+
+
 def load_rules_from_yaml(path: Path) -> List[Dict[str, Any]]:
+    """从 YAML 文件加载规则列表。"""
     if not path.exists():
         raise FileNotFoundError(f"规则文件不存在: {path}")
     try:
@@ -52,13 +67,22 @@ def load_rules_from_yaml(path: Path) -> List[Dict[str, Any]]:
 
 
 def load_default_rules() -> List[Dict[str, Any]]:
+    """加载内置 SDK/API/字符串兜底规则集（可被本地 YAML 禁用/覆盖）。"""
     return load_rules_from_yaml(DEFAULT_RULES_PATH)
+
+
+def merge_rules(default_rules: List[Dict[str, Any]], override_rules: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    合并兜底规则与本地覆盖规则：后出现的同 rule_id 覆盖前者，支持 disabled。
+    """
+    combined = list(default_rules or []) + list(override_rules or [])
+    return _normalize_rules(combined)
 
 
 def scan_sdk_api(
     inputs: List[Path],
     rules: List[Dict[str, Any]],
-    source_flags: Dict[str, str],
+    source_flags: Optional[Dict[str, str]] = None,
     report_dir: Optional[Path] = None,
     report_name: str = "sdk_scan",
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -66,17 +90,8 @@ def scan_sdk_api(
     扫描输入（APK/源码路径），返回 (findings, stats)。
     规则支持 type=sdk/api/string，均基于模式子串匹配。
     """
-    # 规则归一化：支持 disabled，后出现的同 rule_id 覆盖前者
-    normalized: Dict[str, Dict[str, Any]] = {}
-    for r in rules:
-        rid = r.get("rule_id")
-        if not rid:
-            continue
-        if r.get("disabled") is True:
-            normalized[rid] = {"disabled": True}
-            continue
-        normalized[rid] = r
-    active_rules = [r for r in normalized.values() if not r.get("disabled")]
+    active_rules = _normalize_rules(rules)
+    source_flags = source_flags or {}
 
     findings: List[Dict[str, Any]] = []
     stats: Dict[str, Any] = {"count_by_regulation": {}, "count_by_severity": {}}
@@ -96,7 +111,7 @@ def scan_sdk_api(
                             "rule_id": rule.get("rule_id"),
                             "regulation": rule.get("regulation"),
                             "severity": rule.get("severity", "medium"),
-                            "source": source_flags.get(rule.get("rule_id"), "region"),
+                            "source": source_flags.get(rule.get("rule_id")) or rule.get("source") or "region",
                             "location": str(fpath),
                             "evidence": f"pattern matched: {rule.get('pattern')}",
                             "recommendation": rule.get("recommendation", ""),
@@ -174,3 +189,31 @@ def scan_sdk_api(
         print(f"[sdk] report saved: json={json_path} html={html_path}")
 
     return findings, stats
+
+
+def scan_sdk_api_with_yaml(
+    inputs: List[Path],
+    rules_yaml: Optional[Path] = None,
+    source_flags: Optional[Dict[str, str]] = None,
+    include_default_rules: bool = True,
+    report_dir: Optional[Path] = None,
+    report_name: str = "sdk_scan",
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    便捷入口：从 YAML 加载规则并执行扫描。
+    - include_default_rules=True 时先加载内置规则，再用本地 YAML 覆盖/禁用。
+    """
+    base_rules = load_default_rules() if include_default_rules else []
+    extra_rules: List[Dict[str, Any]] = []
+    if rules_yaml:
+        extra_rules = load_rules_from_yaml(rules_yaml)
+    merged = merge_rules(base_rules, extra_rules)
+    if not merged:
+        raise ValueError("未加载到任何规则，请提供规则 YAML 或启用内置规则")
+    return scan_sdk_api(
+        inputs=inputs,
+        rules=merged,
+        source_flags=source_flags or {},
+        report_dir=report_dir,
+        report_name=report_name,
+    )

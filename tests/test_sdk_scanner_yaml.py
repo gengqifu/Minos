@@ -59,3 +59,29 @@ def test_sdk_scanner_rule_override(tmp_path: Path):
     )
     assert findings
     assert findings[0]["severity"] == "high"
+
+
+def test_scan_sdk_api_with_yaml_override_default(tmp_path: Path):
+    _write_file(tmp_path, "src/Main.java", "com.example.tracker")
+    # 本地 YAML 覆盖默认规则的严重级别
+    rules_yaml = tmp_path / "rules.yaml"
+    rules_yaml.write_text(
+        """
+- rule_id: SDK_TRACKING
+  type: sdk
+  pattern: com.example.tracker
+  regulation: GDPR
+  severity: critical
+""",
+        encoding="utf-8",
+    )
+
+    findings, _ = sdk_scanner.scan_sdk_api_with_yaml(
+        inputs=[tmp_path],
+        rules_yaml=rules_yaml,
+        source_flags={"SDK_TRACKING": "region"},
+        include_default_rules=True,
+    )
+
+    assert findings
+    assert any(f["rule_id"] == "SDK_TRACKING" and f["severity"] == "critical" for f in findings)

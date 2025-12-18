@@ -7,7 +7,8 @@
 import io
 import logging
 import os
-from typing import List, Dict, Tuple
+import re
+from typing import List, Dict, Tuple, Optional
 
 from pathlib import Path
 
@@ -59,6 +60,64 @@ def read_document(path: Path) -> Tuple[str, str]:
         return _read_pdf_file(path), "application/pdf"
 
     raise RulesyncConvertError(f"不支持的文件类型: {path.suffix}")
+
+
+_CLAUSE_PATTERNS = [
+    re.compile(r"^\s*(Article|Art\.?)\s+([0-9A-Za-z\.\-]+)\s+(.*)$", re.IGNORECASE),
+    re.compile(r"^\s*Section\s+([0-9A-Za-z\.\-]+)\s+(.*)$", re.IGNORECASE),
+    re.compile(r"^\s*Art\.\s*([0-9A-Za-z\.\-]+)\s*[:\.]?\s*(.*)$", re.IGNORECASE),
+]
+
+
+def _extract_clause_title(line: str) -> Optional[Tuple[str, str]]:
+    for pat in _CLAUSE_PATTERNS:
+        m = pat.match(line)
+        if m:
+            if len(m.groups()) == 3:
+                _, clause, title = m.groups()
+            else:
+                clause, title = m.groups()
+            return clause.strip(), (title or "").strip()
+    return None
+
+
+def segment_text(text: str) -> List[Dict]:
+    """
+    基于条款编号与标题分段。对简单 Article/Section/Art. 模式做启发式解析。
+    """
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    segments: List[Dict] = []
+    current: Dict = {}
+
+    def _flush():
+        if current.get("clause"):
+            body_lines = current.get("body_lines", [])
+            body = "\n".join(body_lines).strip()
+            title = current.get("title") or (body.split("\n")[0] if body else "")
+            segments.append(
+                {
+                    "clause": current["clause"],
+                    "title": title.strip(),
+                    "body": body,
+                }
+            )
+
+    for line in lines:
+        parsed = _extract_clause_title(line)
+        if parsed:
+            _flush()
+            clause, title = parsed
+            current = {"clause": clause, "title": title, "body_lines": []}
+            continue
+        # 非标题行，追加正文
+        current.setdefault("body_lines", []).append(line)
+
+    _flush()
+
+    if not segments:
+        raise RulesyncConvertError("未解析到任何条款编号/标题")
+
+    return segments
 
 
 def extract_rules_from_file(path: Path, source_url: str, regulation: str) -> List[Dict]:

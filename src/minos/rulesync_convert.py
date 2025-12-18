@@ -141,10 +141,40 @@ _ALLOWED_REGULATIONS = {"gdpr", "ccpa", "cpra", "lgpd", "pipl", "appi"}
 _ALLOWED_SEVERITY = {"low", "medium", "high"}
 
 
+class BaseAdapter:
+    """站点适配器基类。"""
+
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        raise NotImplementedError
+
+
+class GenericAdapter(BaseAdapter):
+    """默认适配器：基于通用条款模式分段。"""
+
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        return segment_text(text)
+
+
+ADAPTERS = {
+    "gdpr": GenericAdapter(),
+    "ccpa": GenericAdapter(),
+    "cpra": GenericAdapter(),
+    "lgpd": GenericAdapter(),
+    "pipl": GenericAdapter(),
+    "appi": GenericAdapter(),
+}
+
+
+def _get_adapter(regulation: str) -> BaseAdapter:
+    reg = regulation.lower()
+    adapter = ADAPTERS.get(reg)
+    if not adapter:
+        raise RulesyncConvertError(f"未支持的法规/站点: {regulation}")
+    return adapter
+
+
 def _build_rules(segments: List[Dict], source_url: str, regulation: str, version: str) -> List[Dict]:
     regulation_norm = regulation.lower()
-    if regulation_norm not in _ALLOWED_REGULATIONS:
-        raise RulesyncConvertError(f"未支持的法规/站点: {regulation}")
 
     rules: List[Dict] = []
     for idx, seg in enumerate(segments, 1):
@@ -191,12 +221,9 @@ def extract_rules_from_file(path: Path, source_url: str, regulation: str) -> Lis
     """
     从本地 HTML/PDF 提取规则列表。
     """
-    # 先检查法规是否支持，避免无谓解析
-    if regulation.lower() not in _ALLOWED_REGULATIONS:
-        raise RulesyncConvertError(f"未支持的法规/站点: {regulation}")
-
+    adapter = _get_adapter(regulation)
     text, _ = read_document(path)
-    segments = segment_text(text)
+    segments = adapter.extract_segments(text, source_url=source_url)
     rules = _build_rules(segments, source_url=source_url, regulation=regulation, version="1.0.0")
     _validate_rules(rules)
     return rules
@@ -212,13 +239,12 @@ def convert_files_to_yaml(
     """
     将多个本地 HTML/PDF 转换为单一 YAML 文件。
     """
-    if regulation.lower() not in _ALLOWED_REGULATIONS:
-        raise RulesyncConvertError(f"未支持的法规/站点: {regulation}")
+    adapter = _get_adapter(regulation)
 
     all_segments: List[Dict] = []
     for path in inputs:
         text, _ = read_document(path)
-        segs = segment_text(text)
+        segs = adapter.extract_segments(text, source_url=source_url)
         all_segments.extend(segs)
 
     rules = _build_rules(all_segments, source_url=source_url, regulation=regulation, version=version)

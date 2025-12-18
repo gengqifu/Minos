@@ -1,0 +1,15 @@
+- rule_id: SDK_TRACKING
+  type: sdk
+  pattern: com.example.tracker
+  regulation: GDPR
+  severity: medium
+- rule_id: API_ID_ACCESS
+  type: api
+  pattern: getDeviceId
+  regulation: PIPL
+  severity: high
+- rule_id: STRING_SUSPICIOUS_DOMAIN
+  type: string
+  pattern: tracker.example.com
+  regulation: LGPD
+  severity: medium

@@ -83,6 +83,47 @@ PYTHONPATH=src .venv/bin/python -m minos.cli rulesync \
   oci://example.com/minos/rules:1.0.0#path=rules.tar.gz v1.0.0 --cache-dir ~/.minos/rules
 ```
 
+## 法规文档转换（URL/本地 HTML/PDF → YAML）
+
+- 支持站点：GDPR（eur-lex）、CCPA/CPRA（leginfo）、LGPD（planalto）、PIPL（cac.gov.cn）、APPI（ppc.go.jp）。原文语言保持不变。
+- 将法规页面转换为 YAML：
+```bash
+PYTHONPATH=src .venv/bin/python - <<'PY'
+from pathlib import Path
+from minos import rulesync_convert
+
+out = rulesync_convert.convert_url_to_yaml(
+    url="https://eur-lex.europa.eu/eli/reg/2016/679/oj",   # 或 file://local.html / 本地 PDF 路径
+    cache_dir=Path("~/.minos/cache").expanduser(),
+    out_path=Path("output/gdpr_rules.yaml"),
+    regulation="gdpr",
+    version="1.0.0",
+)
+print("YAML written to", out)
+PY
+```
+- 导入生成的 YAML 到缓存（跳过远程拉取）：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync dummy-source 1.0.0 \
+  --import-yaml output/gdpr_rules.yaml \
+  --regulation gdpr --version 1.0.0 --cache-dir ~/.minos/rules
+```
+- 本地 HTML/PDF 也可直接传入 `convert_files_to_yaml`：
+```bash
+PYTHONPATH=src .venv/bin/python - <<'PY'
+from pathlib import Path
+from minos import rulesync_convert
+out = rulesync_convert.convert_files_to_yaml(
+    inputs=[Path("docs/gdpr.html"), Path("docs/gdpr.pdf")],
+    out_path=Path("output/gdpr_rules.yaml"),
+    source_url="file://docs/gdpr.html",
+    regulation="gdpr",
+    version="1.0.0",
+)
+print(out)
+PY
+```
+
 ## 报告与输出
 
 - 输出目录默认：`output/reports`（可用 `--output-dir` 覆盖）。

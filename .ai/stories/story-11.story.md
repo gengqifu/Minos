@@ -21,7 +21,7 @@ Story Points: 2
 
 ## Tasks
 
-1. - [ ] 设计测试用例（TDD 先行）  
+1. - [x] 设计测试用例（TDD 先行）  
    - [x] 1.1 场景覆盖：省略 URL 自动填充成功（reg=gdpr 等）；未映射法规报错；非白名单 URL 拒绝；本地/自定义源未开关时拒绝；开启 `--allow-local-sources`/`--allow-custom-sources` 后成功；version 未传时默认值写入校验；缓存落地与激活检查；参数值大小写混用仍能匹配（不区分大小写）。  
    - [x] 1.2 断言：stdout/stderr 文案、退出码；metadata（version/source_url/installed_at/active）；缓存目录结构；白名单/开关警示信息；参数值大小写归一处理验证。  
 

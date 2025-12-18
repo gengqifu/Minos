@@ -86,6 +86,7 @@ PYTHONPATH=src .venv/bin/python -m minos.cli rulesync \
 ## 法规文档转换（URL/本地 HTML/PDF → YAML）
 
 - 支持站点：GDPR（eur-lex）、CCPA/CPRA（leginfo）、LGPD（planalto）、PIPL（cac.gov.cn）、APPI（ppc.go.jp）。原文语言保持不变。
+- 适配范围：支持 HTML/PDF；仅抽取正文条款，遇目录/附录/付则时停止或跳过；未支持的法规/站点直接失败。
 - 将法规页面转换为 YAML：
 ```bash
 PYTHONPATH=src .venv/bin/python - <<'PY'

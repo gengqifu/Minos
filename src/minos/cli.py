@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
 
-from minos import rulesync
+from minos import rulesync, rulesync_convert
 
 
 def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -65,6 +65,33 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="cleanup_keep",
         type=int,
         help="同步后保留的版本数量（清理旧版本，默认不清理）",
+    )
+    parser.add_argument(
+        "--import-yaml",
+        dest="import_yaml",
+        action="append",
+        help="导入本地规则 YAML 文件（可多次传入），跳过远程拉取",
+    )
+    parser.add_argument(
+        "--regulation",
+        dest="regulation",
+        help="法规标识（导入 YAML 必填，例：gdpr/ccpa/lgpd/pipl/appi）",
+    )
+    parser.add_argument(
+        "--version",
+        dest="version_override",
+        help="规则版本（导入 YAML 时用于覆盖规则 version 字段）",
+    )
+    parser.add_argument(
+        "--source-url",
+        dest="source_url",
+        help="规则来源 URL（导入 YAML 时用于填充 source_url）",
+    )
+    parser.add_argument(
+        "--allow-partial",
+        dest="allow_partial",
+        action="store_true",
+        help="允许部分成功（导入 YAML 时），默认遇到错误中止",
     )
     parser.set_defaults(handler=_handle_rulesync)
 
@@ -225,6 +252,55 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
     cache_dir = Path(args.cache_dir).expanduser()
     retries = max(args.retries, 0)
     attempt = 0
+
+    # 本地 YAML 导入路径：跳过远程拉取
+    if args.import_yaml:
+        if not args.regulation:
+            sys.stderr.write("[rulesync] 导入 YAML 需指定 --regulation\n")
+            return 2
+        if not args.version_override:
+            sys.stderr.write("[rulesync] 导入 YAML 需指定 --version\n")
+            return 2
+        try:
+            import yaml  # type: ignore
+        except Exception as exc:
+            sys.stderr.write(f"[rulesync] 缺少 PyYAML 依赖: {exc}\n")
+            return 2
+
+        merged: list = []
+        for p in args.import_yaml:
+            path = Path(p)
+            if not path.exists():
+                sys.stderr.write(f"[rulesync] YAML 文件不存在: {p}\n")
+                return 2
+            try:
+                data = yaml.safe_load(path.read_text(encoding="utf-8")) or []
+            except Exception as exc:
+                sys.stderr.write(f"[rulesync] 读取 YAML 失败 {p}: {exc}\n")
+                return 2
+            if isinstance(data, list):
+                merged.extend(data)
+            else:
+                sys.stderr.write(f"[rulesync] YAML 格式应为列表: {p}\n")
+                return 2
+
+        target_dir = cache_dir / args.regulation / args.version_override
+        target_dir.mkdir(parents=True, exist_ok=True)
+        rules_path = target_dir / "rules.yaml"
+        yaml.safe_dump(merged, rules_path.open("w", encoding="utf-8"), allow_unicode=True, sort_keys=False)
+
+        meta = {
+            "version": args.version_override,
+            "source": args.source_url or "local-import",
+            "regulation": args.regulation,
+            "installed_at": "",
+            "active": True,
+        }
+        (target_dir / "metadata.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        rulesync.activate_version(cache_dir / args.regulation, args.version_override)
+        sys.stdout.write(f"[rulesync] 已导入 YAML 到 {rules_path}\n")
+        return 0
+
     while True:
         try:
             # 回滚模式

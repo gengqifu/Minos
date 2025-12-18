@@ -1,141 +1,138 @@
 # Minos
 
-一个扫描 Android APP 是否违反特定隐私合规规范的程序，支持源码/APK 静态扫描并输出 HTML/JSON 报告。
+Android 隐私合规扫描工具：支持源码/APK 静态扫描，按法规规则输出 HTML/JSON 报告。规则与扫描均数据驱动，首版默认只接受 PRD 白名单法规链接在线同步。
 
-## 快速开始
+## 目录
+- 快速开始（5 分钟）
+- 规则与适配器原理
+- 运行扫描
+- 规则同步（首版白名单约束）
+- 法规文档转换（URL→YAML）
+- 输出与报告
+- 故障排查
+- 相关文档
 
+## 快速开始（5 分钟）
 1) 安装依赖（Python 3.10+）：
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-
-2) 同步规则（当前实现使用本地规则包；在线同步能力在开发中）：
+2) 准备规则（从 PRD 白名单法规链接在线转换并导入缓存）：
 ```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.0.0.tar.gz v1.0.0 --sha256 <digest> --cache-dir ~/.minos/rules
-```
-
-3) 扫描（源码示例）：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-  --mode source \
-  --input app/src \
-  --output-dir output/reports \
-  --format both \
-  --regions EU --regulations GDPR
-```
-
-4) 查看报告：`output/reports/scan.html` 与 `output/reports/scan.json`。
-
-## 基本原理
-
-- 规则数据驱动：规则以 YAML/JSON 管理，可同步/缓存并在扫描时加载。
-- 扫描管线：解析输入（源码/Manifest/APK）→ 匹配规则 → 汇总 findings/stats。
-- 报告输出：生成 HTML+JSON，stdout 输出摘要（风险计数与报告路径）。
-
-## 常见使用场景
-
-### 本地运行（源码/APK）
-- 源码扫描：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-  --mode source --input app/src --output-dir output/reports --format both
-```
-- APK 扫描：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-  --mode apk --apk-path app-release.apk --output-dir output/reports --format json
-```
-
-### 容器运行
-- 参考 `containers/README.md`。
-
-### CI 集成
-- 参考 `ci/README.md`（GitHub Actions/GitLab CI 示例）。
-
-## 规则同步（rulesync）
-
-- **离线缓存**：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.0.0.tar.gz v1.0.0 \
-  --sha256 <digest> --cache-dir ~/.minos/rules --offline
-```
-- **回滚/清理**：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.1.0.tar.gz v1.1.0 \
-  --cache-dir ~/.minos/rules --rollback-to v1.0.0
-
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync ./rules-v1.2.0.tar.gz v1.2.0 \
-  --sha256 <digest> --cache-dir ~/.minos/rules --cleanup-keep 2
-```
-- **远端同步（HTTP）**：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync https://example.com/rules.tar.gz v1.0.0 \
-  --sha256 <digest> --cache-dir ~/.minos/rules
-```
-- **远端同步（git/OCI）**：需要本地安装 `git` 或 `oras`，支持 `#path=` 指定制品路径。
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync \
-  git+https://example.com/rules.git#path=dist/rules.tar.gz v1.0.0 --cache-dir ~/.minos/rules
-
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync \
-  oci://example.com/minos/rules:1.0.0#path=rules.tar.gz v1.0.0 --cache-dir ~/.minos/rules
-```
-
-## 法规文档转换（URL/本地 HTML/PDF → YAML）
-
-- 支持站点：GDPR（eur-lex）、CCPA/CPRA（leginfo）、LGPD（planalto）、PIPL（cac.gov.cn）、APPI（ppc.go.jp）。原文语言保持不变。
-- 适配范围：支持 HTML/PDF；仅抽取正文条款，遇目录/附录/付则时停止或跳过；未支持的法规/站点直接失败。
-- 将法规页面转换为 YAML：
-```bash
+# 将 GDPR 官方链接转换为 YAML（保持原文语言，仅正文条款）
 PYTHONPATH=src .venv/bin/python - <<'PY'
 from pathlib import Path
 from minos import rulesync_convert
-
-out = rulesync_convert.convert_url_to_yaml(
-    url="https://eur-lex.europa.eu/eli/reg/2016/679/oj",   # 或 file://local.html / 本地 PDF 路径
+rulesync_convert.convert_url_to_yaml(
+    url="https://eur-lex.europa.eu/eli/reg/2016/679/oj",
     cache_dir=Path("~/.minos/cache").expanduser(),
     out_path=Path("output/gdpr_rules.yaml"),
     regulation="gdpr",
     version="1.0.0",
 )
-print("YAML written to", out)
 PY
-```
-- 导入生成的 YAML 到缓存（跳过远程拉取）：
-```bash
+# 导入生成的 YAML（首版默认禁用本地导入，需显式开启）
 PYTHONPATH=src .venv/bin/python -m minos.cli rulesync dummy-source 1.0.0 \
   --import-yaml output/gdpr_rules.yaml \
-  --regulation gdpr --version 1.0.0 --cache-dir ~/.minos/rules
+  --regulation gdpr --version 1.0.0 \
+  --cache-dir ~/.minos/rules \
+  --allow-local-sources
 ```
-- 本地 HTML/PDF 也可直接传入 `convert_files_to_yaml`：
+3) 扫描示例（源码目录）：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+  --mode source \
+  --input app/src \
+  --regions EU --regulations GDPR \
+  --output-dir output/reports --format both
+```
+4) 查看报告：`output/reports/scan.html` 与 `output/reports/scan.json`。
+
+## 规则与适配器原理
+- 规则来源：PRD“法规参考链接”白名单站点（GDPR/CCPA-CPRA/LGPD/PIPL/APPI）；每条规则包含 rule_id、regulation、pattern、severity、recommendation 等。
+- 规则驱动：Manifest/SDK 扫描器从 YAML 加载匹配逻辑，硬编码仅兜底且可被 YAML 禁用/覆盖。
+- 站点适配器：通用框架 + 站点适配器将 HTML/PDF 正文条款拆分为规则 YAML；不使用 LLM。
+- 语言策略：默认英文，不支持则使用页面默认语言；扫描基于模式匹配，不做语义理解。
+
+## 运行扫描
+- 源码扫描：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+  --mode source --input app/src \
+  --regions EU --regulations GDPR \
+  --output-dir output/reports --format both
+```
+- APK 扫描：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli scan \
+  --mode apk --apk-path app-release.apk \
+  --regions EU --regulations GDPR \
+  --output-dir output/reports --format json
+```
+常用参数：`--format html|json|both`，`--output-dir` 报告目录，`--report-name` 前缀，`--log-file` 日志文件，`--log-level` 日志级别。
+
+## 规则同步（首版白名单约束）
+- 默认仅允许 PRD 白名单域名（eur-lex、leginfo、planalto、cac.gov.cn、ppc.go.jp 等）在线同步。
+- 本地文件/自定义源默认禁用：测试/开发可显式添加 `--allow-local-sources`（本地包、import-yaml）或 `--allow-custom-sources`（非白名单在线源）。
+- 在线同步示例（白名单源占位）：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync https://eur-lex.europa.eu/rules.tar.gz v1.0.0 \
+  --sha256 <digest> --cache-dir ~/.minos/rules
+```
+- 回滚/清理示例：
+```bash
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync <source> v1.1.0 \
+  --cache-dir ~/.minos/rules --rollback-to v1.0.0
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync <source> v1.2.0 \
+  --cache-dir ~/.minos/rules --cleanup-keep 2
+```
+
+## 法规文档转换（URL/本地 HTML/PDF → YAML）
+- 支持站点：GDPR（eur-lex）、CCPA/CPRA（leginfo）、LGPD（planalto）、PIPL（cac.gov.cn）、APPI（ppc.go.jp）；仅抽取正文条款，未支持站点直接失败。
+- URL 转 YAML：
 ```bash
 PYTHONPATH=src .venv/bin/python - <<'PY'
 from pathlib import Path
 from minos import rulesync_convert
-out = rulesync_convert.convert_files_to_yaml(
+rulesync_convert.convert_url_to_yaml(
+    url="https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5",
+    cache_dir=Path("~/.minos/cache").expanduser(),
+    out_path=Path("output/ccpa_rules.yaml"),
+    regulation="ccpa",
+    version="1.0.0",
+)
+PY
+```
+- 本地 HTML/PDF 转 YAML（导入时需 `--allow-local-sources`）：
+```bash
+PYTHONPATH=src .venv/bin.python - <<'PY'
+from pathlib import Path
+from minos import rulesync_convert
+rulesync_convert.convert_files_to_yaml(
     inputs=[Path("docs/gdpr.html"), Path("docs/gdpr.pdf")],
     out_path=Path("output/gdpr_rules.yaml"),
     source_url="file://docs/gdpr.html",
     regulation="gdpr",
     version="1.0.0",
 )
-print(out)
 PY
 ```
-- 未支持的法规/站点：当前仅支持 GDPR/CCPA/CPRA/LGPD/PIPL/APPI。输入其它法规/站点会直接失败并提示需扩展适配器。
 
-## 报告与输出
+## 输出与报告
+- 默认输出目录：`output/reports`。
+- 报告字段：findings（rule_id、regulation、source、severity、location、evidence、recommendation），stats（按法规/严重级别计数），meta（输入、时间、规则版本）。
+- HTML/JSON 同步生成，stdout 输出扫描摘要（命中计数、报告路径）。
 
-- 输出目录默认：`output/reports`（可用 `--output-dir` 覆盖）。
-- 输出格式：`--format html|json|both`。
-- 日志：`--log-file output/logs/scan.log` 可输出文件日志。
+## 故障排查
+- “本地源被禁用”：加 `--allow-local-sources`；在线非白名单源需 `--allow-custom-sources`。
+- “未找到规则/版本”：检查 rulesync 缓存目录与版本号，或重新同步；可用 `--rollback-to` 回滚。
+- “缺少依赖”：安装 `PyYAML`；使用 OCI 源需安装 `oras`，git 源需安装 `git`。
+- “无网/受限”：先在有网环境准备缓存，离线模式使用 `--offline`（需已有缓存）。
 
 ## 相关文档
-
-- CI 示例与推荐流程：`ci/README.md`
-- 容器使用说明：`containers/README.md`
-- 动态检测预研（接口/样例）：`docs/dynamic-prestudy.md`
+- CI 示例：`ci/README.md`
+- 容器使用：`containers/README.md`
 - 变更记录：`CHANGELOG.md`
-- 验收用例与详细测试清单：`docs/acceptance.md`
+- 测试清单：`tests/test-cases.md`

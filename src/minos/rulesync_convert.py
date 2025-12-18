@@ -156,9 +156,44 @@ class GenericAdapter(BaseAdapter):
 
 
 class EurlexAdapter(GenericAdapter):
-    """EUR-Lex GDPR 适配器：当前复用通用分段，预留后续结构化增强。"""
+    """EUR-Lex GDPR 适配器：基于清洗后文本做 Article 分段，忽略 Annex。"""
 
-    pass
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        text = _clean_html_text(text)
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        segments: List[Dict] = []
+        current: Dict = {}
+
+        def _flush():
+            if current.get("clause"):
+                body_lines = current.get("body_lines", [])
+                body = "\n".join(body_lines).strip()
+                title = current.get("title") or (body.split("\n")[0] if body else "")
+                segments.append(
+                    {
+                        "clause": current["clause"],
+                        "title": title.strip(),
+                        "body": body,
+                    }
+                )
+
+        for line in lines:
+            # Annex/附录后内容忽略
+            if re.match(r"^annex\b", line, re.IGNORECASE):
+                break
+            parsed = _extract_clause_title(line)
+            if parsed:
+                _flush()
+                clause, title = parsed
+                current = {"clause": clause, "title": title, "body_lines": []}
+                continue
+            if current:
+                current.setdefault("body_lines", []).append(line)
+
+        _flush()
+        if not segments:
+            raise RulesyncConvertError("未解析到任何条款编号/标题")
+        return segments
 
 
 ADAPTERS = {

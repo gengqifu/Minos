@@ -42,6 +42,25 @@ def test_rulesync_from_url_default_mapping(tmp_path: Path, monkeypatch):
     assert meta.get("active") is True
 
 
+def test_rulesync_from_url_default_version(tmp_path: Path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    _mock_convert(monkeypatch, cache_dir)
+    args = [
+        "rulesync",
+        "--from-url",
+        "--regulation",
+        "gdpr",
+        "--cache-dir",
+        str(cache_dir),
+    ]
+    exit_code = cli.main(args)
+    assert exit_code == 0
+    meta = _read_metadata(cache_dir, "gdpr", "latest")
+    assert meta is not None
+    assert meta["version"] == "latest"
+    assert meta.get("active") is True
+
+
 def test_rulesync_from_url_sync_all_when_no_regulation(tmp_path: Path, monkeypatch):
     cache_dir = tmp_path / "cache"
     _mock_convert(monkeypatch, cache_dir)

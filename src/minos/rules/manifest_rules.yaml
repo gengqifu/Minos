@@ -1,0 +1,24 @@
+- rule_id: PERM_SENSITIVE_LOCATION
+  type: permission
+  pattern: android.permission.ACCESS_FINE_LOCATION
+  regulation: PIPL
+  severity: high
+  recommendation: "仅在必要场景申请定位权限，确保前台提示与同意。"
+- rule_id: PERM_BACKGROUND_LOCATION
+  type: permission
+  pattern: android.permission.ACCESS_BACKGROUND_LOCATION
+  regulation: PIPL
+  severity: high
+  recommendation: "后台定位需最小化收集并取得明示同意。"
+- rule_id: EXPORTED_ACTIVITY
+  type: component
+  component: activity
+  regulation: GDPR
+  severity: high
+  recommendation: "避免将无保护的 Activity 导出，或配置权限保护。"
+- rule_id: EXPORTED_SERVICE
+  type: component
+  component: service
+  regulation: GDPR
+  severity: high
+  recommendation: "避免将无保护的 Service 导出，或配置权限保护。"

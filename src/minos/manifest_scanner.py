@@ -213,6 +213,11 @@ def load_rules_from_yaml(path: Path) -> List[Dict[str, Any]]:
     return data
 
 
+def load_default_rules() -> List[Dict[str, Any]]:
+    """加载内置的 Manifest 规则集。"""
+    return load_rules_from_yaml(DEFAULT_RULES_PATH)
+
+
 def scan_manifest_with_yaml(
     manifest_path: Path, rules_yaml: Path, source_flags: Dict[str, str] | None = None
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -221,3 +226,4 @@ def scan_manifest_with_yaml(
     """
     rules = load_rules_from_yaml(rules_yaml)
     return scan_manifest(manifest_path, rules, source_flags or {})
+DEFAULT_RULES_PATH = Path(__file__).parent / "rules" / "manifest_rules.yaml"

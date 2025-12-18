@@ -63,6 +63,21 @@ def test_unknown_regulation_fails(tmp_path: Path):
 
 
 @pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
+def test_unknown_adapter_failure_message(tmp_path: Path):
+    html = "<h1>Article 1</h1><p>content</p>"
+    path = tmp_path / "unknown.html"
+    path.write_text(html, encoding="utf-8")
+
+    with pytest.raises(rulesync_convert.RulesyncConvertError) as excinfo:
+        rulesync_convert.extract_rules_from_file(
+            path=path,
+            source_url="https://example.com/unknown",
+            regulation="unknown-law",
+        )
+    assert "未支持" in str(excinfo.value) or "未实现" in str(excinfo.value)
+
+
+@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
 def test_convert_multiple_files_to_yaml(tmp_path: Path):
     html = "<h1>Article 1 Title</h1><p>content</p>"
     pdf_text = "Section 1798.100 Title\nContent"

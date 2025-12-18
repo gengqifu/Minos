@@ -19,26 +19,13 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-2) 准备规则（从 PRD 白名单法规链接在线转换并导入缓存）：
+2) 准备规则（单步 from-url，同步 PRD 白名单法规链接到本地缓存，参数可选且值不区分大小写）：
 ```bash
-# 将 GDPR 官方链接转换为 YAML（保持原文语言，仅正文条款）
-PYTHONPATH=src .venv/bin/python - <<'PY'
-from pathlib import Path
-from minos import rulesync_convert
-rulesync_convert.convert_url_to_yaml(
-    url="https://eur-lex.europa.eu/eli/reg/2016/679/oj",
-    cache_dir=Path("~/.minos/cache").expanduser(),
-    out_path=Path("output/gdpr_rules.yaml"),
-    regulation="gdpr",
-    version="1.0.0",
-)
-PY
-# 导入生成的 YAML（首版默认禁用本地导入，需显式开启）
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync dummy-source 1.0.0 \
-  --import-yaml output/gdpr_rules.yaml \
-  --regulation gdpr --version 1.0.0 \
-  --cache-dir ~/.minos/rules \
-  --allow-local-sources
+# 同步默认法规（gdpr/ccpa/lgpd/pipl/appi 等，使用 PRD 默认链接，version 可选）
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync --from-url --version v1 --cache-dir ~/.minos/rules
+# 只同步指定法规（示例：GDPR，省略 URL 自动填充）
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync --from-url --regulation GDPR --version v1 --cache-dir ~/.minos/rules
+# 需本地/自定义源时显式开启（仅受控环境）：--allow-local-sources / --allow-custom-sources
 ```
 3) 扫描示例（源码目录）：
 ```bash
@@ -73,20 +60,15 @@ PYTHONPATH=src .venv/bin/python -m minos.cli scan \
 ```
 常用参数：`--format html|json|both`，`--output-dir` 报告目录，`--report-name` 前缀，`--log-file` 日志文件，`--log-level` 日志级别。
 
-## 规则同步（首版白名单约束）
-- 默认仅允许 PRD 白名单域名（eur-lex、leginfo、planalto、cac.gov.cn、ppc.go.jp 等）在线同步。
-- 本地文件/自定义源默认禁用：测试/开发可显式添加 `--allow-local-sources`（本地包、import-yaml）或 `--allow-custom-sources`（非白名单在线源）。
-- 在线同步示例（白名单源占位）：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync https://eur-lex.europa.eu/rules.tar.gz v1.0.0 \
-  --sha256 <digest> --cache-dir ~/.minos/rules
-```
+## 规则同步（首版白名单约束，参数值不区分大小写）
+- 单步命令：`minos rulesync --from-url [--regulation <reg>] [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`。URL 可省略，未指定 regulation 时默认同步 PRD 法规参考链接中的全部法规（gdpr/ccpa/cpra/lgpd/pipl/appi），reg/version 大小写不敏感。  
+- 默认仅允许 PRD 白名单域名（eur-lex、leginfo、planalto、cac.gov.cn、ppc.go.jp 等）在线同步。  
+- 本地文件/自定义源默认禁用：测试/开发可显式添加 `--allow-local-sources`（本地包/导入 YAML）或 `--allow-custom-sources`（非白名单在线源）。  
 - 回滚/清理示例：
 ```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync <source> v1.1.0 \
-  --cache-dir ~/.minos/rules --rollback-to v1.0.0
-PYTHONPATH=src .venv/bin/python -m minos.cli rulesync <source> v1.2.0 \
-  --cache-dir ~/.minos/rules --cleanup-keep 2
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync --from-url --version v1 --cache-dir ~/.minos/rules
+PYTHONPATH=src .venv/bin.python -m minos.cli rulesync <source> v1.1.0 --cache-dir ~/.minos/rules --rollback-to v1.0.0
+PYTHONPATH=src .venv/bin.python -m minos.cli rulesync <source> v1.2.0 --cache-dir ~/.minos/rules --cleanup-keep 2
 ```
 
 ## 法规文档转换（URL/本地 HTML/PDF → YAML）

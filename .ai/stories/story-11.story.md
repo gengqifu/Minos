@@ -21,17 +21,16 @@ Story Points: 2
 
 ## Tasks
 
-1. - [ ] 需求与设计（TDD 先行）
-   1. - [ ] 1.1 梳理 CLI 接口与参数：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，URL 可省略按映射填充；version 可选（默认值策略）。  
-   2. - [ ] 1.2 设计测试用例（先于实现）：默认成功路径（省略 URL）、未映射法规报错、非白名单 URL 拒绝、本地/自定义源未开关时拒绝、开关开启后成功、version 默认值写入校验、缓存落地与激活检查。  
-   3. - [ ] 1.3 设计 regulation→默认 URL 映射与白名单校验策略，未映射/非白名单时的错误文案；开关警示信息。
+1. - [ ] 设计测试用例（TDD 先行）
+   1. - [ ] 1.1 场景覆盖：省略 URL 自动填充成功（reg=gdpr 等）；未映射法规报错；非白名单 URL 拒绝；本地/自定义源未开关时拒绝；开启 `--allow-local-sources`/`--allow-custom-sources` 后成功；version 未传时默认值写入校验；缓存落地与激活检查。  
+   2. - [ ] 1.2 断言：stdout/stderr 文案、退出码；metadata（version/source_url/installed_at/active）；缓存目录结构；白名单/开关警示信息。
 2. - [ ] 实现与测试
-   1. - [ ] 2.1 实现 CLI 单步流程：下载→转换→写入缓存/metadata→激活；内部调用转换模块但不对外暴露独立命令。  
-   2. - [ ] 2.2 实现默认 URL 自动填充与白名单校验；version 默认值写入 metadata 与缓存路径一致。  
-   3. - [ ] 2.3 落地并运行测试用例（来自 1.2），确保失败路径/警示文案符合设计。
-3. - [ ] 文档与发布
-   1. - [ ] 3.1 更新 README / CI / 容器文档：仅展示 `rulesync --from-url` 单步用法（URL 可省略），说明默认限制与开关。  
-   2. - [ ] 3.2 更新 PRD/变更记录：记录默认 URL 映射、version 可选、仅单一入口的约束。  
+   1. - [ ] 2.1 CLI：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，URL 可省略按映射填充（默认 PRD 白名单）。  
+   2. - [ ] 2.2 流程：下载→转换→写入缓存/metadata→激活；内部调用转换模块但不对外暴露独立命令；version 可选默认值写入缓存与 metadata 一致。  
+   3. - [ ] 2.3 执行并通过 1.x 的测试用例，验证失败路径与警示文案符合设计。
+3. - [ ] 文档与验收
+   1. - [ ] 3.1 更新 README / CI / 容器文档：仅展示 `rulesync --from-url` 单步用法（URL 可省略），说明默认限制、映射表、开关行为。  
+   2. - [ ] 3.2 更新 PRD/变更记录：记录默认 URL 映射、version 可选、单一入口与禁用本地/自定义源的约束。  
    3. - [ ] 3.3 验收用例：最小命令成功、白名单校验、开关场景、缓存落地检查。
 
 ## Constraints

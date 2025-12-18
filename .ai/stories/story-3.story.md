@@ -24,7 +24,7 @@ Story Points: 2
 1. - [x] 设计测试用例（TDD 先行）  
    - [x] 1.1 覆盖：必要性/敏感权限命中、导出组件命中、未命中、规则缺失、非法 Manifest 处理、映射来源标记透传  
    - [x] 1.2 断言：命中列表（rule_id、法规、来源标记）、位置（文件/行或组件名）、严重级别、退出码与日志（测试已编写，当前标记 xfail，等待实现）
-   - [ ] 1.3 覆盖：YAML 规则加载/禁用/覆盖/兜底关闭的设计用例  
+   - [x] 1.3 覆盖：YAML 规则加载/禁用/覆盖/兜底关闭的设计用例  
 2. - [x] 实现测试用例（自动化）  
    - [x] 2.1 编写解析/匹配/报告输出的测试用例，覆盖上述场景与断言（已实现 manifest_scanner 逻辑）  
    - [x] 2.2 支持本地与 CI 运行，验证退出码与日志内容（pytest -q 全部通过）  
@@ -102,6 +102,11 @@ flowchart TD
 - 非法 Manifest：无法解析或缺失时返回错误/退出码，不中断其他流程（可选跳过）。  
 - 来源标记透传：输出 findings 包含 source=region/manual，与映射结果一致。  
 - 输出字段：findings 包含 rule_id/regulation/source/location/evidence/recommendation/severity；stats 按严重级别/法规汇总；退出码约定。
+- YAML 驱动场景：  
+  - 成功：从 YAML 加载敏感权限/导出组件规则，命中后 findings 取 YAML 的 pattern/字段，硬编码兜底可禁用。  
+  - 禁用：规则标记 disabled/skip 后不应命中，stats 不计数。  
+  - 覆盖：同 rule_id 的本地 YAML 覆盖内置规则（severity/source/evidence 等），命中后以覆盖值为准。  
+  - 兜底关闭：关闭硬编码兜底时仅执行 YAML 规则，确认未加载时返回错误且有日志提示。
 
 ## Assertions (for tests)
 

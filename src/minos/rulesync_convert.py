@@ -36,16 +36,16 @@ def _clean_html_text(text: str) -> str:
 
 def _read_pdf_file(path: Path) -> str:
     """
-    尝试读取 PDF 文本。优先使用 PyPDF2；若未安装则以文本方式兜底（便于测试样例）。
+    尝试读取 PDF 文本。优先使用 pypdf；若未安装则以文本方式兜底（便于测试样例）。
     """
     try:
-        import PyPDF2  # type: ignore
+        from pypdf import PdfReader  # type: ignore
     except Exception:
         # 兜底：当作文本文件读取（测试样例用）
         return _read_text_file(path)
 
     try:
-        reader = PyPDF2.PdfReader(str(path))
+        reader = PdfReader(str(path))
         texts = []
         for page in reader.pages:
             try:

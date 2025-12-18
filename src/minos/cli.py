@@ -5,6 +5,7 @@ Minos CLI 入口（rulesync 子命令）。
 import argparse
 import json
 import logging
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
@@ -14,8 +15,8 @@ from minos import rulesync, rulesync_convert
 
 def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("rulesync", help="同步规则包")
-    parser.add_argument("source", help="规则包源（在线 URL：https/git+/oci://，默认不接受本地路径）")
-    parser.add_argument("version", help="规则版本/标签")
+    parser.add_argument("source", nargs="?", default=None, help="规则包源（在线 URL：https/git+/oci://，默认不接受本地路径）")
+    parser.add_argument("version", nargs="?", default=None, help="规则版本/标签（可选）")
     parser.add_argument(
         "--regulations",
         dest="regulations",
@@ -105,7 +106,25 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help="允许非 PRD 白名单的自定义在线源（首版默认关闭，仅支持法规参考链接域名）",
     )
+    parser.add_argument(
+        "--from-url",
+        dest="from_url",
+        nargs="?",
+        default=None,
+        help="直接指定法规 URL（可省略则按法规映射自动填充），与 regulation 组合使用",
+    )
     parser.set_defaults(handler=_handle_rulesync)
+
+
+# PRD 映射的默认法规链接（小写）
+PRD_DEFAULT_URLS = {
+    "gdpr": "https://eur-lex.europa.eu/eli/reg/2016/679/oj",
+    "ccpa": "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5",
+    "cpra": "https://leginfo.legislature.ca.gov/faces/codes_displayText.xhtml?division=3.&part=4.&lawCode=CIV&title=1.81.5",
+    "lgpd": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/L13709.htm",
+    "pipl": "https://www.cac.gov.cn/2021-08/20/c_1631050028355286.htm",
+    "appi": "https://www.ppc.go.jp/personalinfo/legal/guidelines_tsusoku/",
+}
 
 
 def _add_scan_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -291,23 +310,81 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
         host = urlparse(src).hostname or ""
         return host in allow_hosts
 
+    # from-url 模式（Story-11）：单步在线拉取→转换→缓存/激活，默认 PRD 映射
+    if args.from_url is not None or args.source is None:
+        try:
+            regs = args.regulations or []
+            if args.regulation:
+                regs.append(args.regulation)
+            regs = [str(r).lower() for r in regs]
+            if not regs:
+                regs = list(PRD_DEFAULT_URLS.keys())
+            version = (args.version_override or args.version or "latest")
+            version = str(version).lower()
+            for reg in regs:
+                url = args.from_url or PRD_DEFAULT_URLS.get(reg)
+                if url is None:
+                    raise rulesync.RulesyncError(f"未找到法规 {reg} 的默认链接，请指定 URL 或开启自定义源")
+                if rulesync._is_remote_source(url):  # type: ignore[attr-defined]
+                    if not args.allow_custom_sources and not _is_whitelist_remote(url):
+                        raise rulesync.RulesyncError(
+                            "首版仅支持 PRD 白名单法规链接，使用 --allow-custom-sources 可显式允许自定义在线源"
+                        )
+                else:
+                    if not args.allow_local_sources:
+                        raise rulesync.RulesyncError(
+                            "首版仅支持在线法规参考链接，同步本地文件需 --allow-local-sources"
+                        )
+                reg_dir = cache_dir / reg
+                target_dir = reg_dir / version
+                target_dir.mkdir(parents=True, exist_ok=True)
+                rules_path = target_dir / "rules.yaml"
+                # 调用转换模块，download+extract→YAML 落地
+                rulesync_convert.convert_url_to_yaml(
+                    url=url,
+                    cache_dir=cache_dir,
+                    out_path=rules_path,
+                    regulation=reg,
+                    version=version,
+                )
+                meta = {
+                    "version": version,
+                    "source": url,
+                    "regulation": reg,
+                    "installed_at": datetime.now(timezone.utc).isoformat(),
+                    "active": True,
+                }
+                (target_dir / "metadata.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+                rulesync.activate_version(reg_dir, version)
+                print(f"[rulesync] synced {reg} from {url} to {target_dir}")
+            return 0
+        except rulesync.RulesyncError as exc:
+            sys.stderr.write(f"[rulesync] {exc}\n")
+            return 1
+        except Exception as exc:  # pragma: no cover - 容错路径
+            sys.stderr.write(f"[rulesync] from-url 模式失败: {exc}\n")
+            return 1
+
     # 首版默认关闭本地导入/本地文件源（需求约束）
     if not args.allow_local_sources:
         if args.import_yaml:
             sys.stderr.write("[rulesync] 首版仅支持在线法规参考链接同步，导入本地 YAML 已禁用。使用 --allow-local-sources 可显式开启。\n")
             return 2
-        if _is_local_source(args.source):
+        if args.source and _is_local_source(args.source):
             sys.stderr.write("[rulesync] 首版仅支持在线法规参考链接同步，本地文件源已禁用。使用 --allow-local-sources 可显式开启。\n")
             return 2
 
     # 首版默认只允许 PRD 白名单在线源
-    if rulesync._is_remote_source(args.source):  # type: ignore[attr-defined]
+    if args.source and rulesync._is_remote_source(args.source):  # type: ignore[attr-defined]
         if not args.allow_custom_sources and not _is_whitelist_remote(args.source):
             sys.stderr.write(
                 "[rulesync] 首版仅支持 PRD 法规参考链接域名（GDPR/CCPA/CPRA/LGPD/PIPL/APPI）。"
                 " 使用 --allow-custom-sources 可显式允许自定义在线源。\n"
             )
             return 2
+    elif args.source is None and args.from_url:
+        sys.stderr.write("[rulesync] 缺少合法的 source/from-url 参数\n")
+        return 2
 
     # 本地 YAML 导入路径：跳过远程拉取
     if args.import_yaml:

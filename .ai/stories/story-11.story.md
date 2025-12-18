@@ -29,7 +29,7 @@ Story Points: 2
    - [x] 2.1 根据 1.x 设计编写并落地自动化测试，覆盖成功/失败/开关/默认版本场景。  
 
 3. - [ ] 功能实现  
-   - [ ] 3.1 CLI：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，参数可选且值不区分大小写；未给 URL 按映射填充（默认 PRD 白名单），未给 regulation 默认同步 PRD 列出的全部法规。  
+   - [x] 3.1 CLI：`rulesync --from-url --regulation <reg> [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`，参数可选且值不区分大小写；未给 URL 按映射填充（默认 PRD 白名单），未给 regulation 默认同步 PRD 列出的全部法规。  
    - [ ] 3.2 流程：下载→转换→写入缓存/metadata→激活；内部调用转换模块但不对外暴露独立命令；version 可选默认值写入缓存与 metadata 一致。  
 
 4. - [ ] 文档与验收  

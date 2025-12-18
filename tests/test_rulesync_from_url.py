@@ -11,9 +11,18 @@ def _read_metadata(cache_dir: Path, reg: str, version: str = "latest"):
     return json.loads(meta_path.read_text()) if meta_path.exists() else None
 
 
-@pytest.mark.xfail(reason="story-11: rulesync --from-url 单步模式待实现")
-def test_rulesync_from_url_default_mapping(tmp_path: Path):
+def _mock_convert(monkeypatch, cache_dir: Path):
+    def fake_convert(url: str, cache_dir: Path, out_path: Path, regulation: str, version: str):
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text("[]", encoding="utf-8")
+        return out_path
+
+    monkeypatch.setattr("minos.rulesync_convert.convert_url_to_yaml", fake_convert)
+
+
+def test_rulesync_from_url_default_mapping(tmp_path: Path, monkeypatch):
     cache_dir = tmp_path / "cache"
+    _mock_convert(monkeypatch, cache_dir)
     args = [
         "rulesync",
         "--from-url",
@@ -33,9 +42,9 @@ def test_rulesync_from_url_default_mapping(tmp_path: Path):
     assert meta.get("active") is True
 
 
-@pytest.mark.xfail(reason="story-11: rulesync --from-url 单步模式待实现")
-def test_rulesync_from_url_sync_all_when_no_regulation(tmp_path: Path):
+def test_rulesync_from_url_sync_all_when_no_regulation(tmp_path: Path, monkeypatch):
     cache_dir = tmp_path / "cache"
+    _mock_convert(monkeypatch, cache_dir)
     args = [
         "rulesync",
         "--from-url",
@@ -52,7 +61,6 @@ def test_rulesync_from_url_sync_all_when_no_regulation(tmp_path: Path):
         assert meta.get("active") is True
 
 
-@pytest.mark.xfail(reason="story-11: rulesync --from-url 单步模式待实现")
 def test_rulesync_from_url_non_whitelist_rejected(tmp_path: Path):
     cache_dir = tmp_path / "cache"
     args = [
@@ -69,17 +77,15 @@ def test_rulesync_from_url_non_whitelist_rejected(tmp_path: Path):
     assert not (cache_dir / "unknown").exists()
 
 
-@pytest.mark.xfail(reason="story-11: rulesync --from-url 单步模式待实现")
 def test_rulesync_from_url_allow_custom_sources(tmp_path: Path, monkeypatch):
     cache_dir = tmp_path / "cache"
-    # 模拟下载逻辑，直接写出一个假的 tar 包路径或绕过下载
-    def fake_convert(*args, **kwargs):
-        target = cache_dir / "dummy"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("rules: []")
-        return target
 
-    monkeypatch.setattr("minos.rulesync_convert.convert_url_to_yaml", fake_convert, raising=False)
+    def fake_convert(url: str, cache_dir: Path, out_path: Path, regulation: str, version: str):
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text("[]", encoding="utf-8")
+        return out_path
+
+    monkeypatch.setattr("minos.rulesync_convert.convert_url_to_yaml", fake_convert)
 
     args = [
         "rulesync",

@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+DEFAULT_RULES_PATH = Path(__file__).parent / "rules" / "sdk_rules.yaml"
+
 
 def _iter_file_contents(path: Path):
     if path.is_dir():
@@ -36,6 +38,23 @@ def _match_rule(content: bytes, rule: Dict[str, Any]) -> bool:
     return pattern.encode(errors="ignore") in content
 
 
+def load_rules_from_yaml(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        raise FileNotFoundError(f"规则文件不存在: {path}")
+    try:
+        import yaml  # type: ignore
+    except Exception as exc:
+        raise RuntimeError(f"缺少 PyYAML 依赖: {exc}")
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, list):
+        raise ValueError("规则 YAML 应为列表")
+    return data
+
+
+def load_default_rules() -> List[Dict[str, Any]]:
+    return load_rules_from_yaml(DEFAULT_RULES_PATH)
+
+
 def scan_sdk_api(
     inputs: List[Path],
     rules: List[Dict[str, Any]],
@@ -47,6 +66,18 @@ def scan_sdk_api(
     扫描输入（APK/源码路径），返回 (findings, stats)。
     规则支持 type=sdk/api/string，均基于模式子串匹配。
     """
+    # 规则归一化：支持 disabled，后出现的同 rule_id 覆盖前者
+    normalized: Dict[str, Dict[str, Any]] = {}
+    for r in rules:
+        rid = r.get("rule_id")
+        if not rid:
+            continue
+        if r.get("disabled") is True:
+            normalized[rid] = {"disabled": True}
+            continue
+        normalized[rid] = r
+    active_rules = [r for r in normalized.values() if not r.get("disabled")]
+
     findings: List[Dict[str, Any]] = []
     stats: Dict[str, Any] = {"count_by_regulation": {}, "count_by_severity": {}}
 
@@ -55,7 +86,7 @@ def scan_sdk_api(
         try:
             for fpath, content in _iter_file_contents(input_path):
                 print(f"[sdk] parsing file={fpath}")
-                for rule in rules:
+                for rule in active_rules:
                     rtype = rule.get("type")
                     if rtype not in {"sdk", "api", "string"}:
                         print(f"[sdk] skip rule {rule.get('rule_id')} unsupported type={rtype}")

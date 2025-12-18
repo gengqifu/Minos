@@ -86,7 +86,49 @@ _CLAUSE_PATTERNS = [
     re.compile(r"^\s*(Article|Art\.?)\s+([0-9A-Za-z\.\-\u00ba\u00b0]+)(?:\s+(.*))?$", re.IGNORECASE),
     re.compile(r"^\s*Section\s+([0-9A-Za-z\.\-\u00ba\u00b0]+)(?:\s+(.*))?$", re.IGNORECASE),
     re.compile(r"^\s*Art\.\s*([0-9A-Za-z\.\-\u00ba\u00b0]+)\s*[:\.]?\s*(.*)?$", re.IGNORECASE),
+    re.compile(r"^\s*第([一二三四五六七八九十百零〇\d]+)条(?=[：:、\s]|$)\s*(.*)$"),
 ]
+
+
+_CN_NUMERAL_MAP = {
+    "零": 0,
+    "〇": 0,
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+    "十": 10,
+}
+
+
+def _cn_numeral_to_int(s: str) -> Optional[int]:
+    # 简单处理 1-99 的中文数字
+    if s.isdigit():
+        try:
+            return int(s)
+        except Exception:
+            return None
+    if s == "十":
+        return 10
+    # 处理如 "十一"、"二十"、"二十一"
+    if len(s) == 2 and s.startswith("十"):
+        tail = _CN_NUMERAL_MAP.get(s[1], 0)
+        return 10 + tail
+    if len(s) == 2 and s.endswith("十"):
+        head = _CN_NUMERAL_MAP.get(s[0], 0)
+        return head * 10
+    if len(s) == 3 and s[1] == "十":
+        head = _CN_NUMERAL_MAP.get(s[0], 0)
+        tail = _CN_NUMERAL_MAP.get(s[2], 0)
+        return head * 10 + tail
+    if s in _CN_NUMERAL_MAP:
+        return _CN_NUMERAL_MAP[s]
+    return None
 
 
 def _extract_clause_title(line: str) -> Optional[Tuple[str, str]]:
@@ -94,10 +136,15 @@ def _extract_clause_title(line: str) -> Optional[Tuple[str, str]]:
         m = pat.match(line)
         if m:
             if len(m.groups()) == 3:
-                _, clause, title = m.groups()
+                _, clause_raw, title = m.groups()
             else:
-                clause, title = m.groups()
-            return clause.strip(), (title or "").strip()
+                clause_raw, title = m.groups()
+            clause = clause_raw.strip()
+            # 中文数字归一化
+            cn_val = _cn_numeral_to_int(clause)
+            if cn_val is not None:
+                clause = str(cn_val)
+            return clause, (title or "").strip()
     return None
 
 
@@ -282,12 +329,52 @@ class PlanaltoAdapter(GenericAdapter):
         return segments
 
 
+class PiplAdapter(GenericAdapter):
+    """PIPL 适配器：基于中文“第X条”分段，遇附则/附录停止。"""
+
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        text = _clean_html_text(text)
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        segments: List[Dict] = []
+        current: Dict = {}
+
+        def _flush():
+            if current.get("clause"):
+                body_lines = current.get("body_lines", [])
+                body = "\n".join(body_lines).strip()
+                title = current.get("title") or (body.split("\n")[0] if body else "")
+                segments.append(
+                    {
+                        "clause": current["clause"],
+                        "title": title.strip(),
+                        "body": body,
+                    }
+                )
+
+        for line in lines:
+            if re.match(r"^(附则|附录)", line):
+                break
+            parsed = _extract_clause_title(line)
+            if parsed:
+                _flush()
+                clause, title = parsed
+                current = {"clause": clause, "title": title, "body_lines": []}
+                continue
+            if current:
+                current.setdefault("body_lines", []).append(line)
+
+        _flush()
+        if not segments:
+            raise RulesyncConvertError("未解析到任何条款编号/标题")
+        return segments
+
+
 ADAPTERS = {
     "gdpr": EurlexAdapter(),
     "ccpa": LeginfoAdapter(),
     "cpra": LeginfoAdapter(),
     "lgpd": PlanaltoAdapter(),
-    "pipl": GenericAdapter(),
+    "pipl": PiplAdapter(),
     "appi": GenericAdapter(),
 }
 

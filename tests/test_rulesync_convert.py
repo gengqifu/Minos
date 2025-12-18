@@ -1,10 +1,10 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from minos import rulesync_convert
 
 
-@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
 def test_gdpr_html_extract_segments(tmp_path: Path):
     html = """
     <html>
@@ -28,9 +28,10 @@ def test_gdpr_html_extract_segments(tmp_path: Path):
     assert rules[0]["clause"] == "1"
     assert "标题" in rules[0]["title"]
     assert rules[0]["source_url"] == "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+    assert rules[0]["regulation"] == "GDPR"
+    assert rules[0]["rule_id"].startswith("GDPR-")
 
 
-@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
 def test_ccpa_pdf_extract_sections(tmp_path: Path):
     pdf_text = """Section 1798.100 Title
 This is section content.
@@ -49,7 +50,6 @@ Section 1798.101 Another section"""
     assert "1798.101" in clauses
 
 
-@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
 def test_unknown_regulation_fails(tmp_path: Path):
     html = "<h1>Article 1</h1><p>content</p>"
     path = tmp_path / "unknown.html"
@@ -58,11 +58,10 @@ def test_unknown_regulation_fails(tmp_path: Path):
     rulesync_convert.extract_rules_from_file(
         path=path,
         source_url="https://example.com/unknown",
-        regulation="unknown-law",
-    )
+            regulation="unknown-law",
+        )
 
 
-@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
 def test_unknown_adapter_failure_message(tmp_path: Path):
     html = "<h1>Article 1</h1><p>content</p>"
     path = tmp_path / "unknown.html"
@@ -77,7 +76,6 @@ def test_unknown_adapter_failure_message(tmp_path: Path):
     assert "未支持" in str(excinfo.value) or "未实现" in str(excinfo.value)
 
 
-@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
 def test_convert_multiple_files_to_yaml(tmp_path: Path):
     html = "<h1>Article 1 Title</h1><p>content</p>"
     pdf_text = "Section 1798.100 Title\nContent"

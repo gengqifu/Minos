@@ -120,11 +120,61 @@ def segment_text(text: str) -> List[Dict]:
     return segments
 
 
+_ALLOWED_REGULATIONS = {"gdpr", "ccpa", "cpra", "lgpd", "pipl", "appi"}
+_ALLOWED_SEVERITY = {"low", "medium", "high"}
+
+
+def _build_rules(segments: List[Dict], source_url: str, regulation: str, version: str) -> List[Dict]:
+    regulation_norm = regulation.lower()
+    if regulation_norm not in _ALLOWED_REGULATIONS:
+        raise RulesyncConvertError(f"未支持的法规/站点: {regulation}")
+
+    rules: List[Dict] = []
+    for idx, seg in enumerate(segments, 1):
+        rule_id = f"{regulation_norm.upper()}-{idx:03d}"
+        rules.append(
+            {
+                "rule_id": rule_id,
+                "regulation": regulation_norm.upper(),
+                "title": seg.get("title", ""),
+                "clause": seg.get("clause", ""),
+                "description": seg.get("body", ""),
+                "source_url": source_url,
+                "version": version,
+                "severity": "medium",
+                "pattern": "",
+                "evidence": "",
+                "recommendation": "",
+                "confidence": 1.0,
+                "issues": [],
+            }
+        )
+    return rules
+
+
+def _validate_rules(rules: List[Dict]) -> None:
+    for idx, rule in enumerate(rules, 1):
+        missing = [k for k in ["rule_id", "regulation", "title", "clause", "description", "source_url", "version"] if not rule.get(k)]
+        if missing:
+            raise RulesyncConvertError(f"规则 {idx} 缺少必填字段: {','.join(missing)}")
+        if rule.get("severity") not in _ALLOWED_SEVERITY:
+            raise RulesyncConvertError(f"规则 {idx} severity 非法: {rule.get('severity')}")
+        conf = rule.get("confidence")
+        if not isinstance(conf, (int, float)) or conf < 0 or conf > 1:
+            raise RulesyncConvertError(f"规则 {idx} confidence 非法: {conf}")
+        if not isinstance(rule.get("issues"), list):
+            raise RulesyncConvertError(f"规则 {idx} issues 类型应为数组")
+
+
 def extract_rules_from_file(path: Path, source_url: str, regulation: str) -> List[Dict]:
     """
-    占位接口：从本地 HTML/PDF 提取规则，后续按 Story-10 完成实现。
+    从本地 HTML/PDF 提取规则列表。
     """
-    raise RulesyncConvertError("转换功能未实现")
+    text, _ = read_document(path)
+    segments = segment_text(text)
+    rules = _build_rules(segments, source_url=source_url, regulation=regulation, version="1.0.0")
+    _validate_rules(rules)
+    return rules
 
 
 def convert_files_to_yaml(
@@ -132,8 +182,26 @@ def convert_files_to_yaml(
     out_path: Path,
     source_url: str,
     regulation: str,
+    version: str = "1.0.0",
 ) -> Path:
     """
-    占位接口：将多个本地 HTML/PDF 转换为单一 YAML 文件。
+    将多个本地 HTML/PDF 转换为单一 YAML 文件。
     """
-    raise RulesyncConvertError("转换功能未实现")
+    all_segments: List[Dict] = []
+    for path in inputs:
+        text, _ = read_document(path)
+        segs = segment_text(text)
+        all_segments.extend(segs)
+
+    rules = _build_rules(all_segments, source_url=source_url, regulation=regulation, version=version)
+    _validate_rules(rules)
+
+    try:
+        import yaml  # type: ignore
+    except Exception as exc:
+        raise RulesyncConvertError(f"缺少 PyYAML 依赖: {exc}") from exc
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(rules, f, allow_unicode=True, sort_keys=False)
+    return out_path

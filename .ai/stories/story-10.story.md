@@ -39,7 +39,7 @@ Story Points: 2
    - [x] 3.3 YAML 生成与 schema 校验  
    - [x] 3.4 适配器选择与回退逻辑（无匹配时直接失败并提示需扩展）  
 4. - [ ] 实现站点适配器  
-   - [ ] 4.1 GDPR（eur-lex）适配  
+   - [x] 4.1 GDPR（eur-lex）适配  
    - [ ] 4.2 CCPA/CPRA（leginfo）适配  
    - [ ] 4.3 LGPD（planalto）适配  
    - [ ] 4.4 PIPL（epicor）适配  

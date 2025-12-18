@@ -155,8 +155,14 @@ class GenericAdapter(BaseAdapter):
         return segment_text(text)
 
 
+class EurlexAdapter(GenericAdapter):
+    """EUR-Lex GDPR 适配器：当前复用通用分段，预留后续结构化增强。"""
+
+    pass
+
+
 ADAPTERS = {
-    "gdpr": GenericAdapter(),
+    "gdpr": EurlexAdapter(),
     "ccpa": GenericAdapter(),
     "cpra": GenericAdapter(),
     "lgpd": GenericAdapter(),

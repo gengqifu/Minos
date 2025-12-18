@@ -60,6 +60,27 @@
 - 步骤：`minos rulesync <source> <version> --regulations gdpr --regulations ccpa`
 - 预期：若支持法规子集，缓存按法规隔离；否则记录为已知限制
 
+**RS-13 from-url 默认映射（P0）**
+- 步骤：`minos rulesync --from-url --regulation gdpr --version v1 --cache-dir ~/.minos/rules`
+- 预期：退出码 0；自动填充 GDPR 官方链接；`~/.minos/rules/gdpr/v1/` 下生成 rules.yaml 和 metadata，metadata.source 为默认 URL，active=true，reg/version 小写。
+
+**RS-14 from-url 全量同步（P1）**
+- 步骤：`minos rulesync --from-url --version v1 --cache-dir ~/.minos/rules`
+- 预期：退出码 0；按 PRD “法规参考链接”同步 gdpr/ccpa/lgpd/pipl/appi 等全部法规；各法规目录下有 rules.yaml 和 metadata，active=true。
+
+**RS-15 from-url 非白名单拒绝（P1）**
+- 步骤：`minos rulesync --from-url https://example.com/rules.tar.gz --regulation custom --cache-dir ~/.minos/rules`
+- 预期：退出码非零；stderr 提示需 `--allow-custom-sources`；不生成缓存/metadata。
+
+**RS-16 from-url 自定义源放开（P2）**
+- 前置：受控环境允许自定义源
+- 步骤：`minos rulesync --from-url https://example.com/custom --regulation custom --version v1 --allow-custom-sources --cache-dir ~/.minos/rules`
+- 预期：退出码 0；metadata.source=自定义 URL；缓存落地并激活。
+
+**RS-17 from-url 本地源需开关（P2）**
+- 步骤：`minos rulesync --from-url file:///tmp/rules.tar.gz --regulation gdpr --cache-dir ~/.minos/rules`
+- 预期：未开启 `--allow-local-sources` 时退出码非零，提示开启；开启后（仅受控环境）退出码 0，缓存落地。
+
 ## B. scan 扫描
 
 **SC-01 源码扫描（P0）**

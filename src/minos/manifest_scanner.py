@@ -138,9 +138,25 @@ def scan_manifest(
     contents = _collect_manifest_contents(manifest_path)
     roots = [_parse_manifest_content(c) for c in contents]
     root = _merge_roots(roots)
+
+    # 规则归一化：支持 disabled，后出现的同 rule_id 覆盖前者
+    normalized: Dict[str, Dict[str, Any]] = {}
+    for rule in rules:
+        rid = rule.get("rule_id")
+        if not rid:
+            continue
+        if rule.get("disabled") is True:
+            # 标记为禁用则移除已存在的同名规则
+            if rid in normalized:
+                del normalized[rid]
+            normalized[rid] = {"disabled": True}
+            continue
+        normalized[rid] = rule
+    active_rules = [r for r in normalized.values() if not r.get("disabled")]
+
     findings: List[Dict[str, Any]] = []
 
-    for rule in rules:
+    for rule in active_rules:
         rtype = rule.get("type")
         if rtype == "permission":
             findings.extend(_match_permission(root, rule))

@@ -83,9 +83,9 @@ def read_document(path: Path) -> Tuple[str, str]:
 
 
 _CLAUSE_PATTERNS = [
-    re.compile(r"^\s*(Article|Art\.?)\s+([0-9A-Za-z\.\-]+)(?:\s+(.*))?$", re.IGNORECASE),
-    re.compile(r"^\s*Section\s+([0-9A-Za-z\.\-]+)(?:\s+(.*))?$", re.IGNORECASE),
-    re.compile(r"^\s*Art\.\s*([0-9A-Za-z\.\-]+)\s*[:\.]?\s*(.*)?$", re.IGNORECASE),
+    re.compile(r"^\s*(Article|Art\.?)\s+([0-9A-Za-z\.\-\u00ba\u00b0]+)(?:\s+(.*))?$", re.IGNORECASE),
+    re.compile(r"^\s*Section\s+([0-9A-Za-z\.\-\u00ba\u00b0]+)(?:\s+(.*))?$", re.IGNORECASE),
+    re.compile(r"^\s*Art\.\s*([0-9A-Za-z\.\-\u00ba\u00b0]+)\s*[:\.]?\s*(.*)?$", re.IGNORECASE),
 ]
 
 
@@ -240,11 +240,53 @@ class LeginfoAdapter(GenericAdapter):
         return segments
 
 
+class PlanaltoAdapter(GenericAdapter):
+    """LGPD planalto 适配器：基于 Art. 分段，过滤 índice/附录。"""
+
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        text = _clean_html_text(text)
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        segments: List[Dict] = []
+        current: Dict = {}
+
+        def _flush():
+            if current.get("clause"):
+                body_lines = current.get("body_lines", [])
+                body = "\n".join(body_lines).strip()
+                title = current.get("title") or (body.split("\n")[0] if body else "")
+                segments.append(
+                    {
+                        "clause": current["clause"],
+                        "title": title.strip(),
+                        "body": body,
+                    }
+                )
+
+        for line in lines:
+            if re.match(r"^(indice|sum[áa]rio)\b", line, re.IGNORECASE):
+                continue
+            if re.match(r"^anexo\b", line, re.IGNORECASE):
+                break
+            parsed = _extract_clause_title(line)
+            if parsed:
+                _flush()
+                clause, title = parsed
+                current = {"clause": clause, "title": title, "body_lines": []}
+                continue
+            if current:
+                current.setdefault("body_lines", []).append(line)
+
+        _flush()
+        if not segments:
+            raise RulesyncConvertError("未解析到任何条款编号/标题")
+        return segments
+
+
 ADAPTERS = {
     "gdpr": EurlexAdapter(),
     "ccpa": LeginfoAdapter(),
     "cpra": LeginfoAdapter(),
-    "lgpd": GenericAdapter(),
+    "lgpd": PlanaltoAdapter(),
     "pipl": GenericAdapter(),
     "appi": GenericAdapter(),
 }

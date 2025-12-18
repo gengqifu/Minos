@@ -167,7 +167,6 @@ def test_rule_source_precedence(tmp_path: Path):
     assert findings2 and findings2[0]["source"] == "region"
 
 
-@pytest.mark.xfail(reason="待实现 YAML 规则禁用/覆盖逻辑")
 def test_disabled_rule_should_not_hit(tmp_path: Path):
     manifest = """
     <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
@@ -190,7 +189,6 @@ def test_disabled_rule_should_not_hit(tmp_path: Path):
     assert not stats.get("count_by_regulation")
 
 
-@pytest.mark.xfail(reason="待实现 YAML 规则覆盖逻辑（同 rule_id 后者覆盖前者）")
 def test_rule_override_by_rule_id(tmp_path: Path):
     manifest = """
     <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">

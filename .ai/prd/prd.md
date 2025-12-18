@@ -203,6 +203,14 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 站点适配器：GDPR/CCPA/CPRA/LGPD/PIPL/APPI  
   - 不使用 LLM，解析失败需输出定位信息  
 
+- Story 11: 规则同步单一入口与默认 URL 映射  
+  Status: Draft  
+  Requirements:  
+  - 仅暴露 `rulesync --from-url --regulation <reg> [--version <ver>]` 单一入口，完成“在线拉取（PRD 白名单）→转换→缓存/激活”全流程，URL 可省略按映射自动填充。  
+  - 版本参数可选，未提供时使用默认版本标识写入 metadata 与缓存路径。  
+  - 默认禁止本地文件/导入 YAML/非白名单源，仅在显式开关下放开（受控环境）。  
+  - 维持 PRD 白名单域名与法规→URL 映射；未映射法规且未提供 URL 时直接报错。  
+
 ## Epic 2: Story List
 
 - Story 1: 地区→法规映射配置  

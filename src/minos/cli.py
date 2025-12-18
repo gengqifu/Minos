@@ -14,7 +14,7 @@ from minos import rulesync, rulesync_convert
 
 def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
     parser = subparsers.add_parser("rulesync", help="同步规则包")
-    parser.add_argument("source", help="规则包源（文件路径/https/git+/oci://）")
+    parser.add_argument("source", help="规则包源（在线 URL：https/git+/oci://，默认不接受本地路径）")
     parser.add_argument("version", help="规则版本/标签")
     parser.add_argument(
         "--regulations",
@@ -92,6 +92,18 @@ def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="allow_partial",
         action="store_true",
         help="允许部分成功（导入 YAML 时），默认遇到错误中止",
+    )
+    parser.add_argument(
+        "--allow-local-sources",
+        dest="allow_local_sources",
+        action="store_true",
+        help="允许从本地文件/压缩包导入（首版默认关闭，仅支持在线法规参考链接）",
+    )
+    parser.add_argument(
+        "--allow-custom-sources",
+        dest="allow_custom_sources",
+        action="store_true",
+        help="允许非 PRD 白名单的自定义在线源（首版默认关闭，仅支持法规参考链接域名）",
     )
     parser.set_defaults(handler=_handle_rulesync)
 
@@ -252,6 +264,50 @@ def _handle_rulesync(args: argparse.Namespace) -> int:
     cache_dir = Path(args.cache_dir).expanduser()
     retries = max(args.retries, 0)
     attempt = 0
+
+    def _is_local_source(src: str) -> bool:
+        # 以 file:// 或本地路径为特征；http/https/git+/oci+ 视为远程
+        if src.startswith("file://"):
+            return True
+        if rulesync._is_remote_source(src):  # type: ignore[attr-defined]
+            return False
+        return Path(src).expanduser().exists()
+
+    def _is_whitelist_remote(src: str) -> bool:
+        # PRD 白名单域名
+        allow_hosts = {
+            "eur-lex.europa.eu",
+            "leginfo.legislature.ca.gov",
+            "www.planalto.gov.br",
+            "www.cac.gov.cn",
+            "cac.gov.cn",
+            "www.ppc.go.jp",
+            "ppc.go.jp",
+        }
+        try:
+            from urllib.parse import urlparse
+        except Exception:
+            return False
+        host = urlparse(src).hostname or ""
+        return host in allow_hosts
+
+    # 首版默认关闭本地导入/本地文件源（需求约束）
+    if not args.allow_local_sources:
+        if args.import_yaml:
+            sys.stderr.write("[rulesync] 首版仅支持在线法规参考链接同步，导入本地 YAML 已禁用。使用 --allow-local-sources 可显式开启。\n")
+            return 2
+        if _is_local_source(args.source):
+            sys.stderr.write("[rulesync] 首版仅支持在线法规参考链接同步，本地文件源已禁用。使用 --allow-local-sources 可显式开启。\n")
+            return 2
+
+    # 首版默认只允许 PRD 白名单在线源
+    if rulesync._is_remote_source(args.source):  # type: ignore[attr-defined]
+        if not args.allow_custom_sources and not _is_whitelist_remote(args.source):
+            sys.stderr.write(
+                "[rulesync] 首版仅支持 PRD 法规参考链接域名（GDPR/CCPA/CPRA/LGPD/PIPL/APPI）。"
+                " 使用 --allow-custom-sources 可显式允许自定义在线源。\n"
+            )
+            return 2
 
     # 本地 YAML 导入路径：跳过远程拉取
     if args.import_yaml:

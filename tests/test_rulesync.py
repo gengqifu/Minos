@@ -154,6 +154,7 @@ def test_cli_rulesync_success(tmp_path: Path, monkeypatch):
         sha256,
         "--cache-dir",
         str(cache_dir),
+        "--allow-local-sources",
     ]
 
     # 捕获退出码
@@ -210,6 +211,7 @@ def test_cli_rulesync_retries_then_success(monkeypatch, tmp_path: Path):
         str(cache_dir),
         "--retries",
         "1",
+        "--allow-local-sources",
     ]
 
     exit_code = cli.main(args)
@@ -235,6 +237,7 @@ def test_cli_rulesync_remote_source_http(monkeypatch, tmp_path: Path):
         sha256,
         "--cache-dir",
         str(cache_dir),
+        "--allow-custom-sources",
     ]
 
     exit_code = cli.main(args)
@@ -249,11 +252,24 @@ def test_cli_rollback_to_previous(tmp_path: Path):
     pkg1, sha1 = _create_rules_pkg(tmp_path, "v1.0.0")
     pkg2, sha2 = _create_rules_pkg(tmp_path, "v1.1.0")
 
-    cli.main(["rulesync", str(pkg1), "v1.0.0", "--sha256", sha1, "--cache-dir", str(cache_dir)])
-    cli.main(["rulesync", str(pkg2), "v1.1.0", "--sha256", sha2, "--cache-dir", str(cache_dir)])
+    cli.main(
+        ["rulesync", str(pkg1), "v1.0.0", "--sha256", sha1, "--cache-dir", str(cache_dir), "--allow-local-sources"]
+    )
+    cli.main(
+        ["rulesync", str(pkg2), "v1.1.0", "--sha256", sha2, "--cache-dir", str(cache_dir), "--allow-local-sources"]
+    )
 
     exit_code = cli.main(
-        ["rulesync", str(pkg2), "v1.1.0", "--cache-dir", str(cache_dir), "--rollback-to", "v1.0.0"]
+        [
+            "rulesync",
+            str(pkg2),
+            "v1.1.0",
+            "--cache-dir",
+            str(cache_dir),
+            "--rollback-to",
+            "v1.0.0",
+            "--allow-local-sources",
+        ]
     )
     assert exit_code == 0
     meta = _read_metadata(cache_dir, "v1.0.0")
@@ -268,7 +284,9 @@ def test_cleanup_keeps_latest_versions(tmp_path: Path):
     pkg3, sha3 = _create_rules_pkg(tmp_path, "v1.2.0")
 
     cli.main(["rulesync", str(pkg1), "v1.0.0", "--sha256", sha1, "--cache-dir", str(cache_dir)])
-    cli.main(["rulesync", str(pkg2), "v1.1.0", "--sha256", sha2, "--cache-dir", str(cache_dir)])
+    cli.main(
+        ["rulesync", str(pkg2), "v1.1.0", "--sha256", sha2, "--cache-dir", str(cache_dir), "--allow-local-sources"]
+    )
     cli.main(
         [
             "rulesync",
@@ -280,6 +298,7 @@ def test_cleanup_keeps_latest_versions(tmp_path: Path):
             str(cache_dir),
             "--cleanup-keep",
             "2",
+            "--allow-local-sources",
         ]
     )
 
@@ -315,7 +334,9 @@ def test_get_active_path_returns_current(tmp_path: Path):
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir()
     pkg, sha = _create_rules_pkg(tmp_path, "v1.0.0")
-    cli.main(["rulesync", str(pkg), "v1.0.0", "--sha256", sha, "--cache-dir", str(cache_dir)])
+    cli.main(
+        ["rulesync", str(pkg), "v1.0.0", "--sha256", sha, "--cache-dir", str(cache_dir), "--allow-local-sources"]
+    )
 
     active = rulesync.get_active_path(cache_dir)
     assert active is not None

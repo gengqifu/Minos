@@ -2,8 +2,8 @@
 Manifest 扫描：解析权限/导出组件，按规则匹配并生成 findings/stats。
 """
 
-import xml.etree.ElementTree as ET
 import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -194,3 +194,30 @@ def scan_manifest(
         )
 
     return findings, stats
+
+
+def load_rules_from_yaml(path: Path) -> List[Dict[str, Any]]:
+    """从 YAML 文件加载规则列表。"""
+    if not path.exists():
+        raise ManifestScanError(f"规则文件不存在: {path}")
+    try:
+        import yaml  # type: ignore
+    except Exception as exc:
+        raise ManifestScanError(f"缺少 PyYAML 依赖: {exc}")
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ManifestScanError(f"读取规则 YAML 失败: {exc}")
+    if not isinstance(data, list):
+        raise ManifestScanError("规则 YAML 应为列表")
+    return data
+
+
+def scan_manifest_with_yaml(
+    manifest_path: Path, rules_yaml: Path, source_flags: Dict[str, str] | None = None
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    便捷入口：从 YAML 加载规则并执行扫描。
+    """
+    rules = load_rules_from_yaml(rules_yaml)
+    return scan_manifest(manifest_path, rules, source_flags or {})

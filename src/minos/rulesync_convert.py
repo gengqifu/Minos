@@ -199,10 +199,51 @@ class EurlexAdapter(GenericAdapter):
         return segments
 
 
+class LeginfoAdapter(GenericAdapter):
+    """leginfo CCPA/CPRA 适配器：基于 Section 分段，过滤目录/附录。"""
+
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        text = _clean_html_text(text)
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        segments: List[Dict] = []
+        current: Dict = {}
+
+        def _flush():
+            if current.get("clause"):
+                body_lines = current.get("body_lines", [])
+                body = "\n".join(body_lines).strip()
+                title = current.get("title") or (body.split("\n")[0] if body else "")
+                segments.append(
+                    {
+                        "clause": current["clause"],
+                        "title": title.strip(),
+                        "body": body,
+                    }
+                )
+
+        for line in lines:
+            # 跳过目录/附录关键词
+            if re.match(r"^(table of contents|appendix|annex)\b", line, re.IGNORECASE):
+                continue
+            parsed = _extract_clause_title(line)
+            if parsed:
+                _flush()
+                clause, title = parsed
+                current = {"clause": clause, "title": title, "body_lines": []}
+                continue
+            if current:
+                current.setdefault("body_lines", []).append(line)
+
+        _flush()
+        if not segments:
+            raise RulesyncConvertError("未解析到任何条款编号/标题")
+        return segments
+
+
 ADAPTERS = {
     "gdpr": EurlexAdapter(),
-    "ccpa": GenericAdapter(),
-    "cpra": GenericAdapter(),
+    "ccpa": LeginfoAdapter(),
+    "cpra": LeginfoAdapter(),
     "lgpd": GenericAdapter(),
     "pipl": GenericAdapter(),
     "appi": GenericAdapter(),

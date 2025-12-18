@@ -6,6 +6,9 @@
 
 import html as html_lib
 import re
+import hashlib
+import urllib.request
+import urllib.error
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -300,3 +303,49 @@ def convert_files_to_yaml(
     with out_path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(rules, f, allow_unicode=True, sort_keys=False)
     return out_path
+
+
+def _cache_filename(url: str) -> str:
+    h = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
+    return f"{h}.html"
+
+
+def fetch_url(url: str, cache_dir: Path, timeout: int = 20) -> Path:
+    """
+    下载 URL 到缓存目录；若缓存已存在则直接返回。
+    """
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    target = cache_dir / _cache_filename(url)
+    if target.exists():
+        return target
+    # 支持 file:// 直接读取
+    if url.startswith("file://"):
+        src_path = Path(url.replace("file://", "", 1))
+        if not src_path.exists():
+            raise RulesyncConvertError(f"文件不存在: {url}")
+        target.write_bytes(src_path.read_bytes())
+        return target
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            content = resp.read()
+        target.write_bytes(content)
+        return target
+    except urllib.error.URLError as exc:  # pragma: no cover - 依赖网络
+        raise RulesyncConvertError(f"下载失败: {exc}") from exc
+    except Exception as exc:  # pragma: no cover
+        raise RulesyncConvertError(f"下载失败: {exc}") from exc
+
+
+def convert_url_to_yaml(
+    url: str,
+    cache_dir: Path,
+    out_path: Path,
+    regulation: str,
+    version: str = "1.0.0",
+    timeout: int = 20,
+) -> Path:
+    """
+    下载 URL（带缓存）并转换为 YAML。
+    """
+    cache_file = fetch_url(url, cache_dir=cache_dir, timeout=timeout)
+    return convert_files_to_yaml(inputs=[cache_file], out_path=out_path, source_url=url, regulation=regulation, version=version)

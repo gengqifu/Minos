@@ -17,3 +17,15 @@ def extract_rules_from_file(path: Path, source_url: str, regulation: str) -> Lis
     占位接口：从本地 HTML/PDF 提取规则，后续按 Story-10 完成实现。
     """
     raise RulesyncConvertError("转换功能未实现")
+
+
+def convert_files_to_yaml(
+    inputs: List[Path],
+    out_path: Path,
+    source_url: str,
+    regulation: str,
+) -> Path:
+    """
+    占位接口：将多个本地 HTML/PDF 转换为单一 YAML 文件。
+    """
+    raise RulesyncConvertError("转换功能未实现")

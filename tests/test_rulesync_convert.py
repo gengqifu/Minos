@@ -60,3 +60,26 @@ def test_unknown_regulation_fails(tmp_path: Path):
         source_url="https://example.com/unknown",
         regulation="unknown-law",
     )
+
+
+@pytest.mark.xfail(reason="转换功能未实现，待 Story-10 开发", raises=rulesync_convert.RulesyncConvertError)
+def test_convert_multiple_files_to_yaml(tmp_path: Path):
+    html = "<h1>Article 1 Title</h1><p>content</p>"
+    pdf_text = "Section 1798.100 Title\nContent"
+    html_path = tmp_path / "gdpr.html"
+    pdf_path = tmp_path / "ccpa.pdf"
+    html_path.write_text(html, encoding="utf-8")
+    pdf_path.write_text(pdf_text, encoding="utf-8")
+
+    out_yaml = tmp_path / "rules.yaml"
+    result = rulesync_convert.convert_files_to_yaml(
+        inputs=[html_path, pdf_path],
+        out_path=out_yaml,
+        source_url="https://example.com/batch",
+        regulation="gdpr",
+    )
+    assert result == out_yaml
+    assert out_yaml.exists()
+    content = out_yaml.read_text(encoding="utf-8")
+    assert "rule_id" in content
+    assert "regulation" in content

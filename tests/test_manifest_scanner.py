@@ -138,3 +138,43 @@ def test_findings_fields_and_stats(tmp_path: Path):
         assert required_keys.issubset(f.keys())
     assert stats["count_by_regulation"].get("PIPL", 0) >= 1
     assert stats["count_by_regulation"].get("GDPR", 0) >= 1
+
+
+@pytest.mark.xfail(reason="待实现 YAML 规则禁用/覆盖逻辑")
+def test_disabled_rule_should_not_hit(tmp_path: Path):
+    manifest = """
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+      <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    </manifest>
+    """
+    manifest_path = _write_manifest(tmp_path, manifest)
+    rules = [
+        _make_rule(
+            "PERM_SENSITIVE_LOCATION",
+            "permission",
+            pattern="android.permission.ACCESS_FINE_LOCATION",
+            regulation="PIPL",
+            severity="high",
+            disabled=True,
+        ),
+    ]
+    findings, stats = manifest_scanner.scan_manifest(manifest_path, rules, source_flags={"PERM_SENSITIVE_LOCATION": "region"})
+    assert not findings
+    assert not stats.get("count_by_regulation")
+
+
+@pytest.mark.xfail(reason="待实现 YAML 规则覆盖逻辑（同 rule_id 后者覆盖前者）")
+def test_rule_override_by_rule_id(tmp_path: Path):
+    manifest = """
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.example">
+      <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    </manifest>
+    """
+    manifest_path = _write_manifest(tmp_path, manifest)
+    rules = [
+        _make_rule("PERM_SENSITIVE_LOCATION", "permission", pattern="android.permission.ACCESS_FINE_LOCATION", regulation="PIPL", severity="high"),
+        _make_rule("PERM_SENSITIVE_LOCATION", "permission", pattern="android.permission.ACCESS_FINE_LOCATION", regulation="PIPL", severity="low"),
+    ]
+    findings, _ = manifest_scanner.scan_manifest(manifest_path, rules, source_flags={"PERM_SENSITIVE_LOCATION": "region"})
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "low"

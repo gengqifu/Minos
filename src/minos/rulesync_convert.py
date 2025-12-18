@@ -87,6 +87,7 @@ _CLAUSE_PATTERNS = [
     re.compile(r"^\s*Section\s+([0-9A-Za-z\.\-\u00ba\u00b0]+)(?:\s+(.*))?$", re.IGNORECASE),
     re.compile(r"^\s*Art\.\s*([0-9A-Za-z\.\-\u00ba\u00b0]+)\s*[:\.]?\s*(.*)?$", re.IGNORECASE),
     re.compile(r"^\s*第([一二三四五六七八九十百零〇\d]+)条(?=[：:、\s]|$)\s*(.*)$"),
+    re.compile(r"^\s*第?([0-9０-９]+)条(?=[：:、\s\(\)（）]|$)\s*(.*)$"),  # 日文/全角数字
 ]
 
 
@@ -369,13 +370,53 @@ class PiplAdapter(GenericAdapter):
         return segments
 
 
+class AppiAdapter(GenericAdapter):
+    """APPI 适配器：基于“第X条”或 Article 分段，遇付則/附则停止。"""
+
+    def extract_segments(self, text: str, source_url: str) -> List[Dict]:
+        text = _clean_html_text(text)
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        segments: List[Dict] = []
+        current: Dict = {}
+
+        def _flush():
+            if current.get("clause"):
+                body_lines = current.get("body_lines", [])
+                body = "\n".join(body_lines).strip()
+                title = current.get("title") or (body.split("\n")[0] if body else "")
+                segments.append(
+                    {
+                        "clause": current["clause"],
+                        "title": title.strip(),
+                        "body": body,
+                    }
+                )
+
+        for line in lines:
+            if re.match(r"^(付則|附則|附则)", line):
+                break
+            parsed = _extract_clause_title(line)
+            if parsed:
+                _flush()
+                clause, title = parsed
+                current = {"clause": clause, "title": title, "body_lines": []}
+                continue
+            if current:
+                current.setdefault("body_lines", []).append(line)
+
+        _flush()
+        if not segments:
+            raise RulesyncConvertError("未解析到任何条款编号/标题")
+        return segments
+
+
 ADAPTERS = {
     "gdpr": EurlexAdapter(),
     "ccpa": LeginfoAdapter(),
     "cpra": LeginfoAdapter(),
     "lgpd": PlanaltoAdapter(),
     "pipl": PiplAdapter(),
-    "appi": GenericAdapter(),
+    "appi": AppiAdapter(),
 }
 
 

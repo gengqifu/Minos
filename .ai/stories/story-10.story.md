@@ -26,7 +26,7 @@ Story Points: 2
    - [x] 1.1 覆盖：HTML 站点解析（GDPR/CCPA/LGPD 等）条款分段与标题识别  
    - [x] 1.2 覆盖：PDF 解析路径（能提取条款编号/标题/正文）  
    - [x] 1.3 覆盖：语言回退（无英文时使用页面默认语言）  
-   - [ ] 1.4 覆盖：输出 YAML 字段完整性与 schema 校验  
+   - [x] 1.4 覆盖：输出 YAML 字段完整性与 schema 校验  
    - [ ] 1.5 覆盖：站点结构变化导致解析失败的错误定位信息  
    - [ ] 1.6 覆盖：未知法规/站点（不在 PRD 列表）时直接失败并提示需扩展适配器  
 2. - [ ] 实现测试用例（自动化）  
@@ -105,6 +105,11 @@ flowchart TD
 - 语言回退  
   - 无英文版本的站点样例（如 LGPD 葡语页、APPI 日语页）：断言默认使用页面语言，条款编号/标题/正文均可解析；title 缺失时用首句回填。  
   - 若用户强制请求英文但站点无英文内容，需提示回退到默认语言，不因缺少英文失败。  
+- YAML 字段完整性与 schema 校验  
+  - 正例：输出包含必填字段（rule_id/regulation/title/clause/description/source_url/version），severity 默认 medium；confidence 在 0~1；issues 为数组。  
+  - 负例：缺少必填字段（如 rule_id/title）时，schema 校验失败并返回非零；日志包含缺失字段列表。  
+  - 负例：severity 非枚举或 confidence 非数值时，校验失败并提示具体字段和值。  
+  - 负例：issues 不是数组时，校验失败并提示类型错误。  
 
 ## Chat Command Log
 

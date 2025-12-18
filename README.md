@@ -124,6 +124,7 @@ out = rulesync_convert.convert_files_to_yaml(
 print(out)
 PY
 ```
+- 未支持的法规/站点：当前仅支持 GDPR/CCPA/CPRA/LGPD/PIPL/APPI。输入其它法规/站点会直接失败并提示需扩展适配器。
 
 ## 报告与输出
 

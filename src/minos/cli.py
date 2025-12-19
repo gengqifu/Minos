@@ -10,7 +10,7 @@ from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
 
-from minos import rulesync, rulesync_convert
+from minos import manifest_scanner, rulesync, rulesync_convert, sdk_scanner
 
 
 def _add_rulesync_parser(subparsers: argparse._SubParsersAction) -> None:
@@ -145,6 +145,8 @@ def _add_scan_parser(subparsers: argparse._SubParsersAction) -> None:
     parser.add_argument("--log-max-bytes", dest="log_max_bytes", type=int, default=0, help="日志文件轮转大小，0 表示不轮转")
     parser.add_argument("--log-backup", dest="log_backup", type=int, default=3, help="日志轮转保留文件数")
     parser.add_argument("--config", dest="config", help="配置文件路径（可选）")
+    parser.add_argument("--rules-dir", dest="rules_dir", help="规则加载根目录（默认 ~/.minos/rules）")
+    parser.add_argument("--rules-version", dest="rules_version", help="规则版本（可选，不填则取 active 或最新）")
     parser.set_defaults(handler=_handle_scan)
 
 
@@ -217,18 +219,19 @@ def _handle_scan(args: argparse.Namespace) -> int:
     needs_src = args.mode in {"source", "both"}
     needs_apk = args.mode in {"apk", "both"}
 
+    # 规则加载
     logging.info("scan start mode=%s inputs=%s apks=%s manifests=%s", args.mode, inputs, apks, manifests)
     try:
-        if needs_src and not inputs and needs_apk and not apks:
-            sys.stderr.write("[scan] 缺少输入：请指定 --input 或 --apk-path\n")
+        if needs_src and not inputs and needs_apk and not apks and not manifests:
+            sys.stderr.write("[scan] 缺少输入：请指定 --input 或 --apk-path 或 --manifest\n")
             logging.error("no inputs for mode=%s", args.mode)
             return 2
-        if needs_src and not inputs:
-            sys.stderr.write("[scan] 缺少源码输入 (--input)\n")
+        if needs_src and not inputs and not manifests:
+            sys.stderr.write("[scan] 缺少源码输入 (--input 或 --manifest)\n")
             logging.error("missing source inputs")
             return 2
-        if needs_apk and not apks:
-            sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path)\n")
+        if needs_apk and not apks and not manifests:
+            sys.stderr.write("[scan] 缺少 APK 输入 (--apk-path 或 --manifest)\n")
             logging.error("missing apk inputs")
             return 2
         for apk in apks:
@@ -237,20 +240,104 @@ def _handle_scan(args: argparse.Namespace) -> int:
                 logging.error("apk path not found: %s", apk)
                 return 2
 
+        findings_all: list[dict] = []
+        stats_all: dict[str, dict] = {"count_by_regulation": {}, "count_by_severity": {}}
+
+        # 规则加载：若未指定 rules-dir 或目录不存在，则使用内置默认规则
+        try:
+            regulations = args.regulations or list(PRD_DEFAULT_URLS.keys())
+            regulations = [str(r).lower() for r in regulations]
+            rules_dir_arg = args.rules_dir
+            if rules_dir_arg:
+                rules_dir = Path(rules_dir_arg).expanduser()
+                if not rules_dir.exists():
+                    raise FileNotFoundError(f"规则目录不存在: {rules_dir}")
+                all_rules: list[dict] = []
+                loaded_regs: list[str] = []
+
+                def _select_version(reg_dir: Path, preferred: str | None) -> str:
+                    if preferred:
+                        cand = reg_dir / preferred
+                        if (cand / "rules.yaml").exists():
+                            return preferred
+                    active = None
+                    for sub in reg_dir.iterdir():
+                        meta = sub / "metadata.json"
+                        if meta.exists():
+                            try:
+                                data = json.loads(meta.read_text(encoding="utf-8"))
+                                if data.get("active"):
+                                    active = sub.name
+                                    break
+                            except Exception:
+                                continue
+                    if active:
+                        return active
+                    versions = sorted([p.name for p in reg_dir.iterdir() if p.is_dir()])
+                    if not versions:
+                        raise FileNotFoundError(f"未找到 {reg_dir} 下的规则版本")
+                    return versions[-1]
+
+                for reg in regulations:
+                    reg_dir = rules_dir / reg
+                    if not reg_dir.exists():
+                        raise FileNotFoundError(f"未找到法规 {reg} 的规则目录: {reg_dir}")
+                    version = _select_version(reg_dir, args.rules_version.lower() if args.rules_version else None)
+                    rules_path = reg_dir / version / "rules.yaml"
+                    if not rules_path.exists():
+                        raise FileNotFoundError(f"未找到规则文件: {rules_path}")
+                    loaded_regs.append(reg)
+                    all_rules.extend(manifest_scanner.load_rules_from_yaml(rules_path))
+                if not all_rules:
+                    raise ValueError("未加载到任何规则")
+            else:
+                # 使用内置默认规则兜底
+                all_rules = manifest_scanner.load_default_rules() + sdk_scanner.load_default_rules()
+                regulations = regulations or ["default"]
+        except Exception as exc:
+            sys.stderr.write(f"[scan] 规则加载失败: {exc}\n")
+            return 2
+
+        # Manifest 扫描
+        for manifest_path in manifests:
+            try:
+                f, s = manifest_scanner.scan_manifest(Path(manifest_path), all_rules, {})
+                findings_all.extend(f)
+                for reg, cnt in s["count_by_regulation"].items():
+                    stats_all["count_by_regulation"][reg] = stats_all["count_by_regulation"].get(reg, 0) + cnt
+                for sev, cnt in s["count_by_severity"].items():
+                    stats_all["count_by_severity"][sev] = stats_all["count_by_severity"].get(sev, 0) + cnt
+            except Exception as exc:
+                sys.stderr.write(f"[scan] Manifest 扫描失败: {exc}\n")
+                return 2
+
+        # SDK/源码扫描（源码目录或输入文件）
+        if needs_src and inputs:
+            try:
+                f, s = sdk_scanner.scan_sdk_api([Path(p) for p in inputs], all_rules, source_flags={})
+                findings_all.extend(f)
+                for reg, cnt in s["count_by_regulation"].items():
+                    stats_all["count_by_regulation"][reg] = stats_all["count_by_regulation"].get(reg, 0) + cnt
+                for sev, cnt in s["count_by_severity"].items():
+                    stats_all["count_by_severity"][sev] = stats_all["count_by_severity"].get(sev, 0) + cnt
+            except Exception as exc:
+                sys.stderr.write(f"[scan] SDK 扫描失败: {exc}\n")
+                return 2
+
         meta_inputs = inputs + apks + manifests
         report = {
             "meta": {
                 "inputs": meta_inputs,
                 "mode": args.mode,
                 "regions": args.regions or [],
-                "regulations": args.regulations or [],
+                "regulations": regulations,
                 "threads": args.threads,
                 "timeout": args.timeout,
                 "log_level": args.log_level,
                 "config": args.config,
             },
-            "findings": [],
-            "stats": {"count_by_regulation": {}, "count_by_severity": {}},
+            "findings": findings_all,
+            "stats": stats_all,
         }
         _write_report(Path(args.output_dir), args.report_name, report, args.format)
         report_paths = []

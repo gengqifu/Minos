@@ -34,7 +34,8 @@ def test_scan_uses_rules_from_custom_dir(tmp_path: Path, monkeypatch):
     # 准备输入：Manifest + 源码
     manifest_path = tmp_path / "AndroidManifest.xml"
     manifest_path.write_text(
-        '<manifest><uses-permission android:name="android.permission.INTERNET"/></manifest>', encoding="utf-8"
+        '<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/></manifest>',
+        encoding="utf-8",
     )
     src_dir = tmp_path / "src"
     src_dir.mkdir()

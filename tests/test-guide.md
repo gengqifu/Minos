@@ -6,7 +6,7 @@
 
 覆盖以下能力：
 - rulesync：本地/远端同步、from-url 默认映射/全量同步、白名单拒绝与开关放开、校验、离线、回滚、清理、超时与错误提示。
-- scan：源码/APK/both 扫描、报告输出、日志输出、退出码。
+- scan：源码/APK/both 扫描、报告输出、日志输出、退出码；从规则缓存/自定义 `--rules-dir` 加载规则，未指定法规默认 PRD 全量，参数值不区分大小写，缺规则/缓存报错。
 - 报告：JSON/HTML 产出与基础字段可读性。
 - CI 集成：GitHub/GitLab 示例与 smoke 验收脚本。
 - 容器：构建镜像、容器内扫描与 rulesync。
@@ -31,6 +31,7 @@
   - from-url：使用 PRD 白名单默认链接（gdpr/ccpa/lgpd/pipl/appi），可选指定 regulation/version；本地/自定义源需显式开关。
   - 本地 tar.gz（需 `--allow-local-sources`）。
   - 远端 HTTP/git/OCI（需 `--allow-custom-sources`，可用内网或测试仓库）。
+- 规则目录：默认 `~/.minos/rules/<reg>/<ver>/rules.yaml`，可用 `--rules-dir` 指定自定义目录（容器内默认 `/root/.minos/rules`）；参数值大小写不敏感。
 
 ## 4. 测试方法与策略
 
@@ -41,7 +42,7 @@
 ## 5. 执行流程建议
 
 1) rulesync：优先验证 from-url 默认映射/全量同步（白名单），再覆盖非白名单拒绝与开关放开、本地包/导入 YAML（需开关）、回滚/清理/离线。  
-2) scan：验证源码/APK/both 的扫描与报告产出。  
+2) scan：验证源码/APK/both 的扫描与报告产出；覆盖默认缓存加载、自定义 `--rules-dir`、缺规则/缓存报错、大小写不敏感、禁用/覆盖规则生效。  
 3) 报告/日志：检查 JSON/HTML 与日志输出。  
 4) CI：运行 `ci/tests/ci_workflow_smoke.sh`。  
 5) 容器：构建镜像并在容器内执行 scan/rulesync。

@@ -203,6 +203,12 @@ Minos 是一个针对 Android 应用的隐私合规扫描程序，目标是帮�
   - 通用框架：下载/清洗/分段/生成规则 YAML  
   - 站点适配器：GDPR/CCPA/CPRA/LGPD/PIPL/APPI  
   - 不使用 LLM，解析失败需输出定位信息  
+- Story 12: CLI 扫描加载缓存规则并执行 Manifest/SDK 扫描  
+  Status: Draft  
+  Requirements:  
+  - `minos scan` 按法规/地区从缓存 `~/.minos/rules/<reg>/<ver>/rules.yaml` 加载规则（参数值大小写不敏感），未指定法规默认使用 PRD 列出的全部法规；规则缺失/缓存缺失需报错非零。  
+  - 支持 `--rules-dir` 覆盖默认规则目录，路径可展开 `~`。  
+  - 合并加载的规则后调用 Manifest/SDK 扫描器，生成报告/统计；禁用/覆盖规则生效；stdout 输出摘要（法规列表、规则路径、命中/报告信息）。  
 
 - Story 11: 规则同步单一入口与默认 URL 映射  
   Status: Draft  

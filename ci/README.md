@@ -4,7 +4,7 @@
 
 ## 前置条件与约束
 - Python 3.10+（示例使用 python:3.10-slim 基础镜像）。  
-- 规则缓存：首版仅支持 PRD 法规参考链接白名单源（eur-lex/leginfo/planalto/cac.gov.cn/ppc.go.jp），参数值不区分大小写。默认禁用本地/自定义源，若需测试/开发，请在生成缓存时显式加 `--allow-local-sources` 或 `--allow-custom-sources`。  
+- 规则缓存：首版仅支持 PRD 法规参考链接白名单源（eur-lex/leginfo/planalto/cac.gov.cn/ppc.go.jp），参数值不区分大小写。默认禁用本地/自定义源，若需测试/开发，请在生成缓存时显式加 `--allow-local-sources` 或 `--allow-custom-sources`。scan 默认从缓存 `~/.minos/rules/<reg>/<version>/rules.yaml` 加载规则，可用 `--rules-dir` 覆盖。  
 - 推荐 CI 不执行 `rulesync`（避免网络抖动）；请在 CI 外部使用单步命令准备好缓存并挂载：  
   `minos rulesync --from-url [--regulation <reg>] [--version <ver>] --cache-dir ~/.minos/rules`（URL 可省略，未给 regulation 默认同步全部 PRD 法规）。  
 - 示例输入：仓库内 `fixtures/` 提供占位源码/APK，可用于本地或 CI smoke 验证。

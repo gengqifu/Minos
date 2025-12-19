@@ -59,6 +59,7 @@ PYTHONPATH=src .venv/bin/python -m minos.cli scan \
   --output-dir output/reports --format json
 ```
 常用参数：`--format html|json|both`，`--output-dir` 报告目录，`--report-name` 前缀，`--log-file` 日志文件，`--log-level` 日志级别。
+- 规则加载：默认从缓存 `~/.minos/rules/<reg>/<version>/rules.yaml` 加载（参数值大小写不敏感，未指定法规默认使用 PRD 列表）；可用 `--rules-dir` 覆盖规则目录；规则/缓存缺失会报错并返回非零。  
 
 ## 规则同步（首版白名单约束，参数值不区分大小写）
 - 单步命令：`minos rulesync --from-url [--regulation <reg>] [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`。URL 可省略，未指定 regulation 时默认同步 PRD 法规参考链接中的全部法规（gdpr/ccpa/cpra/lgpd/pipl/appi），reg/version 大小写不敏感。  

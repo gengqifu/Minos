@@ -4,7 +4,7 @@
 
 ## 前置条件与约束
 - 需要 Docker 环境（支持 build/run）。  
-- 规则缓存：首版仅支持 PRD 法规参考链接白名单源（eur-lex/leginfo/planalto/cac.gov.cn/ppc.go.jp），参数值不区分大小写。默认禁用本地/自定义源；如需测试/开发，请在生成缓存时显式加 `--allow-local-sources` 或 `--allow-custom-sources`。  
+- 规则缓存：首版仅支持 PRD 法规参考链接白名单源（eur-lex/leginfo/planalto/cac.gov.cn/ppc.go.jp），参数值不区分大小写。默认禁用本地/自定义源；如需测试/开发，请在生成缓存时显式加 `--allow-local-sources` 或 `--allow-custom-sources`。scan 默认从缓存 `~/.minos/rules/<reg>/<version>/rules.yaml` 加载规则，可用 `--rules-dir` 覆盖（容器内默认 `/root/.minos/rules`）。  
 - 镜像内规则缓存路径约定：`/root/.minos/rules`（运行时请挂载）。  
 - 建议先在宿主机准备好规则缓存，再在容器内复用（避免容器内上网与下载）。
 
@@ -27,7 +27,7 @@ docker run --rm \
 期望输出：`output/reports/*.json|*.html`。
 
 ## 推荐运行流程
-1) 在宿主机生成/同步规则并放入 `~/.minos/rules`。示例命令：`minos rulesync --from-url [--regulation <reg>] [--version <ver>] --cache-dir ~/.minos/rules`（URL 可省略，未给 regulation 默认同步全部 PRD 法规）。  
+1) 在宿主机生成/同步规则并放入 `~/.minos/rules`。示例命令：`minos rulesync --from-url [--regulation <reg>] [--version <ver>] --cache-dir ~/.minos/rules`（URL 可省略，未给 regulation 默认同步全部 PRD 法规）。容器内扫描默认读取 `/root/.minos/rules/<reg>/<version>/rules.yaml`，可通过 `--rules-dir` 指向挂载目录。  
 2) 运行容器时挂载源码/输出/规则缓存目录。  
 3) 容器内执行 `minos scan`，报告与日志写回宿主挂载目录。
 

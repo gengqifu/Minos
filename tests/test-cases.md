@@ -115,6 +115,26 @@
 - 步骤：`--log-file output/logs/scan.log --log-level debug`
 - 预期：日志文件生成，包含摘要
 
+**SC-09 缺规则/缓存（P0）**
+- 步骤：指定 `--rules-dir` 为不存在或规则文件缺失的目录
+- 预期：退出码非零，stderr 提示缺规则/缓存，报告不生成
+
+**SC-10 默认缓存规则加载（P0）**
+- 步骤：准备 `~/.minos/rules/<reg>/<ver>/rules.yaml`，运行 `minos scan --mode source --regulations gdpr --input <dir> --format json`
+- 预期：退出码 0，命中规则，报告生成；reg/version 显示小写
+
+**SC-11 自定义规则目录（P1）**
+- 步骤：`minos scan --rules-dir <custom> --regulations gdpr --mode both --manifest <manifest> --input <src>`
+- 预期：从自定义目录加载规则，命中后报告生成；退出码 0
+
+**SC-12 法规默认全量（P1）**
+- 步骤：未传 regulations/regions，且规则目录包含多法规
+- 预期：默认加载 PRD 全部法规，若缺失某法规规则则报错；完整时退出码 0，报告含多法规 stats
+
+**SC-13 禁用/覆盖规则生效（P1）**
+- 步骤：同 rule_id 的规则被 disabled 或 severity 覆盖
+- 预期：disabled 不命中；覆盖后按最新字段计算 stats
+
 ## C. 报告与日志
 
 **RP-01 JSON 字段检查（P0）**

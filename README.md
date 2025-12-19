@@ -27,13 +27,20 @@ PYTHONPATH=src .venv/bin/python -m minos.cli rulesync --from-url --version v1 --
 PYTHONPATH=src .venv/bin/python -m minos.cli rulesync --from-url --regulation GDPR --version v1 --cache-dir ~/.minos/rules
 # 需本地/自定义源时显式开启（仅受控环境）：--allow-local-sources / --allow-custom-sources
 ```
-3) 扫描示例（源码目录）：
+3) 扫描示例（完整参数，源码 + Manifest + APK，按需删减）：
 ```bash
 PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-  --mode source \
-  --input app/src \
-  --regions EU --regulations GDPR \
-  --output-dir output/reports --format both
+  --mode both \
+  --input app/src \                                   # 源码目录，可多次传入
+  --manifest app/src/main/AndroidManifest.xml \       # Manifest，可多次传入
+  --apk-path app/build/outputs/apk/debug/app-debug.apk \  # 可选 APK
+  --regions EU --regulations GDPR \                   # 地区/法规，大小写不敏感；不填法规默认 PRD 列表
+  --rules-dir ~/.minos/rules \                        # 规则目录，默认 ~/.minos/rules 或内置兜底
+  --rules-version v1 \                                # 规则版本，可选；不填用激活或最新
+  --output-dir output/reports \                       # 报告目录
+  --report-name full-scan \                           # 报告名前缀
+  --format both \                                     # 报告格式：html/json/both
+  --threads 4                                         # 并行度，可选
 ```
 4) 查看报告：`output/reports/scan.html` 与 `output/reports/scan.json`。
 
@@ -44,22 +51,22 @@ PYTHONPATH=src .venv/bin/python -m minos.cli scan \
 - 语言策略：默认英文，不支持则使用页面默认语言；扫描基于模式匹配，不做语义理解。
 
 ## 运行扫描
-- 源码扫描：
+- 全量示例（源码 + Manifest + APK）：
 ```bash
 PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-  --mode source --input app/src \
+  --mode both \
+  --input app/src \
+  --manifest app/src/main/AndroidManifest.xml \
+  --apk-path app/build/outputs/apk/debug/app-debug.apk \
   --regions EU --regulations GDPR \
-  --output-dir output/reports --format both
+  --rules-dir ~/.minos/rules --rules-version v1 \
+  --output-dir output/reports --report-name full-scan \
+  --format both --threads 4
 ```
-- APK 扫描：
-```bash
-PYTHONPATH=src .venv/bin/python -m minos.cli scan \
-  --mode apk --apk-path app-release.apk \
-  --regions EU --regulations GDPR \
-  --output-dir output/reports --format json
-```
-常用参数：`--format html|json|both`，`--output-dir` 报告目录，`--report-name` 前缀，`--log-file` 日志文件，`--log-level` 日志级别。
-- 规则加载：默认从缓存 `~/.minos/rules/<reg>/<version>/rules.yaml` 加载（参数值大小写不敏感，未指定法规默认使用 PRD 列表）；可用 `--rules-dir` 覆盖规则目录；规则/缓存缺失会报错并返回非零。  
+- 只扫源码：`--mode source --input <src>`；可去掉 `--manifest/--apk-path`。
+- 只扫 APK：`--mode apk --apk-path <apk>`。
+- 常用参数：`--format html|json|both`，`--output-dir` 报告目录，`--report-name` 前缀，`--log-file`/`--log-level` 日志。
+- 规则加载：默认从缓存 `~/.minos/rules/<reg>/<version>/rules.yaml` 加载（参数值大小写不敏感，未指定法规默认使用 PRD 列表）；可用 `--rules-dir` 覆盖规则目录，`--rules-version` 选定版本；规则/缓存缺失会报错并返回非零。  
 
 ## 规则同步（首版白名单约束，参数值不区分大小写）
 - 单步命令：`minos rulesync --from-url [--regulation <reg>] [--version <ver>] [--allow-local-sources] [--allow-custom-sources]`。URL 可省略，未指定 regulation 时默认同步 PRD 法规参考链接中的全部法规（gdpr/ccpa/cpra/lgpd/pipl/appi），reg/version 大小写不敏感。  
@@ -68,8 +75,8 @@ PYTHONPATH=src .venv/bin/python -m minos.cli scan \
 - 回滚/清理示例：
 ```bash
 PYTHONPATH=src .venv/bin/python -m minos.cli rulesync --from-url --version v1 --cache-dir ~/.minos/rules
-PYTHONPATH=src .venv/bin.python -m minos.cli rulesync <source> v1.1.0 --cache-dir ~/.minos/rules --rollback-to v1.0.0
-PYTHONPATH=src .venv/bin.python -m minos.cli rulesync <source> v1.2.0 --cache-dir ~/.minos/rules --cleanup-keep 2
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync <source> v1.1.0 --cache-dir ~/.minos/rules --rollback-to v1.0.0
+PYTHONPATH=src .venv/bin/python -m minos.cli rulesync <source> v1.2.0 --cache-dir ~/.minos/rules --cleanup-keep 2
 ```
 
 ## 法规文档转换（URL/本地 HTML/PDF → YAML）
@@ -90,7 +97,7 @@ PY
 ```
 - 本地 HTML/PDF 转 YAML（导入时需 `--allow-local-sources`）：
 ```bash
-PYTHONPATH=src .venv/bin.python - <<'PY'
+PYTHONPATH=src .venv/bin/python - <<'PY'
 from pathlib import Path
 from minos import rulesync_convert
 rulesync_convert.convert_files_to_yaml(

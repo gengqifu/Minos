@@ -28,7 +28,7 @@ Story Points: 3
 2. - [x] 实现测试用例  
    - [x] 2.1 按 1.x 编写自动化测试（可用 mock 规则目录与简易样例文件），覆盖成功/失败/覆盖/禁用/规则缺失/规则目录覆盖等场景。  
 
-3. - [ ] 功能实现  
+3. - [x] 功能实现  
    - [x] 3.1 CLI 解析：新增 `--rules-dir`（覆盖默认缓存根），法规/地区参数大小写不敏感，未指定法规时使用 PRD 全量列表。  
    - [x] 3.2 规则加载：从 `<rules_dir>/<reg>/<version>/rules.yaml` 读取（version 取 active/default 或参数），合并同法规多源规则，支持禁用/覆盖；规则缺失时报错非零。  
    - [x] 3.3 扫描执行：调用 manifest_scanner/sdk_scanner，生成 JSON/HTML 报告与 stats，stdout 输出摘要。  
